@@ -19,7 +19,8 @@ class ManagerActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.manager)
 
-        val logoutButton = findViewById<Button>(R.id.logoutButton)
+        val logoutButton = findViewById<Button>(R.id.logoutButton) //variable to get logout button from manager xml file
+        val managerOptionsButton = findViewById<Button>(R.id.options) //variable to get manager options button from manager xml file
 
 
         val items = listOf("Option 1", "Option 2", "Option 3")  // Dropdown items
@@ -40,6 +41,10 @@ class ManagerActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
             builder.show()
+        }
+
+        managerOptionsButton.setOnClickListener{
+            startActivity(Intent(this, ManagerOptions::class.java))
         }
 
     }

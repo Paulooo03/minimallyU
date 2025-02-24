@@ -39,9 +39,14 @@
         android:layout_height="wrap_content"
         android:hint="Select an option"
         android:inputType="none"
+        android:padding="12dp"
+        android:background="@android:drawable/editbox_background"
         app:layout_constraintTop_toBottomOf="@id/itemsList"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="8dp" />
 
     <!-- Search field placed between autoCompleteTextView and itemsCart -->
     <EditText
@@ -51,6 +56,8 @@
         android:layout_margin="16dp"
         android:hint="Search"
         android:inputType="text"
+        android:padding="12dp"
+        android:background="@android:drawable/editbox_background"
         app:layout_constraintTop_toBottomOf="@id/autoCompleteTextView"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@id/searchItemButton"
@@ -119,13 +126,17 @@
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp" />
 
-    <!-- Optional: Remove or reposition the unused TextInputLayout if it is not needed -->
-    <!--
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
+    <!-- Manager options button -->
+    <Button
+        android:id="@+id/options"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:hint="Select an option">
-    </com.google.android.material.textfield.TextInputLayout>
-    -->
+        android:backgroundTint="#000000"
+        android:text="Manager options"
+        android:textColor="#FFFFFF"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@id/logoutButton"
+        app:layout_constraintEnd_toStartOf="@id/orderButton"
+        android:layout_marginBottom="16dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
