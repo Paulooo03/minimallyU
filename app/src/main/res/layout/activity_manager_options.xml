@@ -179,10 +179,10 @@
         android:background="@android:drawable/editbox_background"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/newQuantity"
-        app:layout_constraintBottom_toTopOf="@+id/backButton"
+        app:layout_constraintBottom_toTopOf="@+id/addItemsButton"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="24dp" />
+        android:layout_marginBottom="16dp" />
 
     <EditText
         android:id="@+id/newQuantity"
@@ -197,7 +197,20 @@
         app:layout_constraintBottom_toBottomOf="@+id/newPrice"
         android:layout_marginEnd="16dp" />
 
-    <!-- Users Section Group - Initially hidden -->
+    <!-- Add Item button - Moved below newQuantity -->
+    <Button
+        android:id="@+id/addItemsButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#000000"
+        android:text="Add Item"
+        android:textColor="#FFFFFF"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/backButton"
+        android:layout_marginBottom="24dp" />
+
     <!-- Users Section Group - Initially hidden -->
     <androidx.constraintlayout.widget.Group
         android:id="@+id/usersGroup"
@@ -317,9 +330,19 @@
         app:layout_constraintBottom_toTopOf="@+id/exportSalesButton" />
 
     <Button
+        android:id="@+id/removeItemButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Remove Item"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="@id/addItemsButton"
+        app:layout_constraintTop_toBottomOf="@id/addItemsButton"
+        android:layout_marginTop="8dp"/>
+
+    <Button
         android:id="@+id/exportSalesButton"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="24dp"
         android:backgroundTint="#000000"
