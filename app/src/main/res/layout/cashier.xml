@@ -25,8 +25,8 @@
     <!-- List of Items -->
     <ListView
         android:id="@+id/itemsList"
-        android:layout_width="418dp"
-        android:layout_height="192dp"
+        android:layout_width="379dp"
+        android:layout_height="194dp"
         android:layout_marginTop="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

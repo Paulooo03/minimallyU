@@ -2,7 +2,11 @@ package com.application.minimallyu
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
+import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.ListView
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -10,12 +14,34 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
 class CashierActivity : AppCompatActivity() {
+
+    private lateinit var inventoryManager: InventoryManager
+    private lateinit var items: ListView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.cashier)
 
         val logoutButton = findViewById<Button>(R.id.logoutButton)
+
+        items = findViewById(R.id.itemsList)
+
+        inventoryManager = InventoryManager(this)
+        inventoryManager.copyInventoryAlways()
+
+        try {
+            val inventory = inventoryManager.loadInventory()
+            if (inventory.isNotEmpty()) {
+                val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, inventory)
+                items.adapter = adapter
+            } else {
+                items.visibility = View.GONE
+                Toast.makeText(this, "Inventory is empty.", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error loading inventory: ${e.message}", Toast.LENGTH_LONG).show()
+        }
 
         logoutButton.setOnClickListener{
             val builder = AlertDialog.Builder(this)
