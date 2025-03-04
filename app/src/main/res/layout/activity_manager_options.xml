@@ -111,9 +111,10 @@
         android:backgroundTint="#000000"
         android:text="Refresh"
         android:textColor="#FFFFFF"
-        app:layout_constraintStart_toEndOf="@id/searchItemButton"
+        app:layout_constraintStart_toEndOf="@id/addItemsButton"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="@+id/searchItem" />
+        app:layout_constraintBottom_toTopOf="@+id/backButton"
+        android:layout_marginBottom="24dp"/>
 
     <!-- Discount section -->
     <Button
@@ -218,10 +219,10 @@
         android:text="Add Item"
         android:textColor="#FFFFFF"
         android:visibility="gone"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/removeItemButton"
+        app:layout_constraintEnd_toStartOf="@+id/resetInventoryButton"
         app:layout_constraintBottom_toTopOf="@+id/backButton"
-        android:layout_marginBottom="24dp" />
+        android:layout_marginBottom="24dp"/>
 
     <!-- Users Section Group - Initially hidden -->
     <androidx.constraintlayout.widget.Group
@@ -347,9 +348,13 @@
         android:layout_height="wrap_content"
         android:text="Remove Item"
         android:visibility="gone"
-        app:layout_constraintStart_toStartOf="@id/addItemsButton"
-        app:layout_constraintTop_toBottomOf="@id/addItemsButton"
-        android:layout_marginTop="8dp"/>
+        android:backgroundTint="#000000"
+        android:textColor="#FFFFFF"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/addItemsButton"
+        app:layout_constraintBottom_toTopOf="@+id/backButton"
+        android:layout_marginBottom="24dp"
+        android:layout_marginEnd="16dp"/>
 
     <Button
         android:id="@+id/exportSalesButton"
