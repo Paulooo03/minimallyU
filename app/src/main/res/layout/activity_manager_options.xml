@@ -82,7 +82,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginEnd="8dp"
         android:layout_marginBottom="16dp"
         android:hint="Search Item"
         android:inputType="text"
@@ -100,6 +100,18 @@
         android:backgroundTint="#000000"
         android:text="Search"
         android:textColor="#FFFFFF"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="@+id/searchItem" />
+
+    <Button
+        android:id="@+id/resetInventoryButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:backgroundTint="#000000"
+        android:text="Refresh"
+        android:textColor="#FFFFFF"
+        app:layout_constraintStart_toEndOf="@id/searchItemButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="@+id/searchItem" />
 

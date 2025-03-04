@@ -26,6 +26,7 @@ class ManagerOptions : AppCompatActivity() {
         setContentView(R.layout.activity_manager_options)
 
         inventoryManager = InventoryManager(this)
+        inventoryManager.copyInventoryAlways()
 
         // Initialize the ListView
         searchResultsListView = findViewById(R.id.List)
@@ -121,7 +122,7 @@ class ManagerOptions : AppCompatActivity() {
 
     private fun refreshInventoryDisplay() {
         try {
-            val inventory = inventoryManager.getInventory()
+            val inventory = inventoryManager.loadInventory()
             if (inventory.isNotEmpty()) {
                 val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, inventory)
                 searchResultsListView.adapter = adapter
@@ -202,7 +203,7 @@ class ManagerOptions : AppCompatActivity() {
     private fun showRemoveItemDialog() {
         try {
             // Get inventory items to populate the dropdown
-            val inventory = inventoryManager.getInventory()
+            val inventory = inventoryManager.loadInventory()
 
             if (inventory.isEmpty()) {
                 Toast.makeText(this, "Inventory is empty. No items to remove.", Toast.LENGTH_SHORT).show()

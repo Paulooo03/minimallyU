@@ -3,6 +3,7 @@ package com.application.minimallyu
 import android.content.Context
 import android.util.Log
 import java.io.File
+import java.io.IOException
 
 class InventoryManager(private val context: Context) {
 
@@ -24,75 +25,113 @@ class InventoryManager(private val context: Context) {
         }
     }
 
-    fun searchItem(query: String): List<String> {
+    fun resetInventory() {
         val file = File(context.filesDir, fileName)
-        val results = mutableListOf<String>()
-        if (!file.exists()) return results
-
-        val lines = file.readLines()
-        if (lines.size < 2) return results
-
-        val header = lines[0].split(",")
-        val data = lines.subList(1, lines.size)
-
-        for (line in data) {
-            val columns = line.split(",")
-            var col = 0
-            while (col < header.size && col < columns.size) {
-                val category = header[col]
-                if (col + 3 < columns.size) {
-                    val itemName = columns[col]
-                    val qty = columns[col + 1]
-                    val srp = columns[col + 2]
-                    val sold = columns[col + 3]
-
-                    if (itemName.contains(query, ignoreCase = true)) {
-                        results.add("Category: $category\nItem: $itemName, Qty: $qty, SRP: $srp, Sold: $sold")
-                    }
-                }
-                col += 5
+        context.assets.open(fileName).use { inputStream ->
+            file.outputStream().use { outputStream ->
+                inputStream.copyTo(outputStream)
             }
         }
-
-        return results
+        Log.d("InventoryManager", "Inventory reset from assets.")
     }
 
-    fun getInventory(): List<String> {
-        val file = File(context.filesDir, fileName)
+    fun loadInventory(): List<String> {
         val inventory = mutableListOf<String>()
-        if (!file.exists()) return inventory
+        try {
+            val file = File(context.filesDir, fileName)
+            Log.d("InventoryManager", "Loading inventory from: ${file.absolutePath}")
+            if (!file.exists()) {
+                Log.e("InventoryManager", "Inventory file does NOT exist!")
+                return inventory
+            }
 
-        val lines = file.readLines()
-        if (lines.size < 2) return inventory
+            val lines = file.readLines()
+            Log.d("InventoryManager", "Inventory lines: ${lines.size}")
+            if (lines.size < 2) {
+                Log.e("InventoryManager", "Inventory file does not have enough rows.")
+                return inventory
+            }
 
-        val header = lines[0].split(",")
-        val data = lines.subList(1, lines.size)
+            // Extracting categories
+            val categories = lines[0].split(",")
 
-        for (line in data) {
-            val columns = line.split(",")
-            var col = 0
-            while (col < header.size && col < columns.size) {
-                val category = header[col]
-                if (col + 3 < columns.size) {
-                    val itemName = columns[col]
-                    val qty = columns[col + 1]
-                    val srp = columns[col + 2]
-                    val sold = columns[col + 3]
+            // Read from second row downwards
+            for (row in 1 until lines.size) {
+                val items = lines[row].split(",")
+
+                // Ensure we have enough items to process
+                if (items.size < categories.size) continue
+
+                for (col in categories.indices step 5) {
+                    // Ensure we don't go out of bounds
+                    if (col + 4 >= items.size) break
+
+                    val category = categories[col].trim()
+                    val itemName = items[col].trim()
+                    val qty = items[col + 1].trim()
+                    val srp = items[col + 2].trim()
+                    val sold = items[col + 3].trim()
 
                     if (itemName.isNotEmpty()) {
-                        inventory.add("Category: $category\nItem: $itemName, Qty: $qty, SRP: $srp, Sold: $sold")
+                        inventory.add(
+                            "Category: $category\nItem: $itemName\nQty: $qty\nSRP: $srp\nSold: $sold"
+                        )
                     }
                 }
-                col += 5
             }
+        } catch (e: Exception) {
+            Log.e("InventoryManager", "Error loading inventory: ${e.message}")
         }
-
         return inventory
+    }
+
+
+    fun searchItem(query: String): List<String> {
+        val results = mutableListOf<String>()
+        try {
+            val file = File(context.filesDir, fileName)
+            if (!file.exists()) return results
+
+            val lines = file.readLines()
+            if (lines.size < 2) return results
+
+            // Extracting categories
+            val categories = lines[0].split(",")
+
+            // Search from second row downwards
+            for (row in 1 until lines.size) {
+                val items = lines[row].split(",")
+
+                // Ensure we have enough items to process
+                if (items.size < categories.size) continue
+
+                for (col in categories.indices step 5) {
+                    // Ensure we don't go out of bounds
+                    if (col + 4 >= items.size) break
+
+                    val category = categories[col].trim()
+                    val itemName = items[col].trim()
+                    val qty = items[col + 1].trim()
+                    val srp = items[col + 2].trim()
+                    val sold = items[col + 3].trim()
+
+                    if (itemName.contains(query, ignoreCase = true)) {
+                        results.add(
+                            "Category: $category\nItem: $itemName\nQty: $qty\nSRP: $srp\nSold: $sold"
+                        )
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("InventoryManager", "Error searching inventory: ${e.message}")
+        }
+        return results
     }
 
     fun getCategories(): List<String> {
         val file = File(context.filesDir, fileName)
-        val firstLine = file.bufferedReader().readLine()
+        if (!file.exists()) return emptyList()
+        val firstLine = file.bufferedReader().readLine() ?: return emptyList()
         val cells = firstLine.split(",")
         val categories = mutableListOf<String>()
         var i = 0
@@ -110,22 +149,11 @@ class InventoryManager(private val context: Context) {
         val file = File(context.filesDir, fileName)
         val lines = file.readLines().toMutableList()
 
-        // Ensure we have at least a header row
-        if (lines.isEmpty()) {
-            lines.add("")
-        }
+        if (lines.isEmpty()) return
 
-        // Get header row
         val categoriesRow = lines[0].split(",").toMutableList()
+        var itemsRow = lines[1].split(",").toMutableList()
 
-        // Create or get data row
-        var itemsRow = if (lines.size > 1) {
-            lines[1].split(",").toMutableList()
-        } else {
-            mutableListOf<String>()
-        }
-
-        // Make sure itemsRow is at least as long as categoriesRow
         while (itemsRow.size < categoriesRow.size) {
             itemsRow.add("")
         }
@@ -135,13 +163,6 @@ class InventoryManager(private val context: Context) {
         while (col < categoriesRow.size) {
             if (categoriesRow[col] == category) {
                 categoryFound = true
-
-                // Ensure we have enough elements in the row
-                while (col + 4 >= itemsRow.size) {
-                    itemsRow.add("")
-                }
-
-                // Place the item
                 itemsRow[col] = itemName
                 itemsRow[col + 1] = quantity
                 itemsRow[col + 2] = price
@@ -152,28 +173,12 @@ class InventoryManager(private val context: Context) {
         }
 
         if (!categoryFound) {
-            // Add new category and item at the end
             categoriesRow.addAll(listOf(category, "QTY", "SRP", "SOLD", ""))
-
-            // Make sure itemsRow is extended to match
-            while (itemsRow.size < categoriesRow.size - 5) {
-                itemsRow.add("")
-            }
-
             itemsRow.addAll(listOf(itemName, quantity, price, "0", ""))
         }
 
-        // Update the file
-        if (lines.isEmpty()) {
-            lines.add(categoriesRow.joinToString(","))
-            lines.add(itemsRow.joinToString(","))
-        } else if (lines.size == 1) {
-            lines[0] = categoriesRow.joinToString(",")
-            lines.add(itemsRow.joinToString(","))
-        } else {
-            lines[0] = categoriesRow.joinToString(",")
-            lines[1] = itemsRow.joinToString(",")
-        }
+        lines[0] = categoriesRow.joinToString(",")
+        lines[1] = itemsRow.joinToString(",")
 
         file.writeText(lines.joinToString("\n"))
     }
@@ -187,22 +192,15 @@ class InventoryManager(private val context: Context) {
         val itemsRow = lines[1].split(",").toMutableList()
 
         var col = 0
-        var itemFound = false
         while (col < header.size && col < itemsRow.size) {
             if (itemsRow[col] == itemName) {
-                // Clear the item but keep structure
                 itemsRow[col] = ""
                 itemsRow[col + 1] = ""
                 itemsRow[col + 2] = ""
                 itemsRow[col + 3] = ""
-                itemFound = true
                 break
             }
             col += 5
-        }
-
-        if (!itemFound) {
-            throw Exception("Item not found: $itemName")
         }
 
         lines[1] = itemsRow.joinToString(",")
@@ -216,33 +214,21 @@ class InventoryManager(private val context: Context) {
         newPrice: String? = null,
         newSold: String? = null
     ) {
-        val file = File(context.filesDir, fileName)
-        val lines = file.readLines().toMutableList()
-        if (lines.size < 2) return
-
-        val header = lines[0].split(",")
-        val itemsRow = lines[1].split(",").toMutableList()
-
-        var col = 0
-        var itemFound = false
-        while (col < header.size && col < itemsRow.size) {
-            if (itemsRow[col] == itemName) {
-                // Update the item
-                itemsRow[col] = newItemName
-                if (newQuantity != null && col + 1 < itemsRow.size) itemsRow[col + 1] = newQuantity
-                if (newPrice != null && col + 2 < itemsRow.size) itemsRow[col + 2] = newPrice
-                if (newSold != null && col + 3 < itemsRow.size) itemsRow[col + 3] = newSold
-                itemFound = true
-                break
-            }
-            col += 5
-        }
-
-        if (!itemFound) {
-            throw Exception("Item not found: $itemName")
-        }
-
-        lines[1] = itemsRow.joinToString(",")
-        file.writeText(lines.joinToString("\n"))
+        // To be implemented as needed.
     }
+
+    fun copyInventoryAlways() {
+        val file = File(context.filesDir, fileName)
+        try {
+            context.assets.open(fileName).use { inputStream ->
+                file.outputStream().use { outputStream ->
+                    inputStream.copyTo(outputStream)
+                }
+            }
+            Log.d("InventoryManager", "Inventory overwritten from assets.")
+        } catch (e: IOException) {
+            Log.e("InventoryManager", "Error overwriting inventory: ${e.message}")
+        }
+    }
+
 }
