@@ -25,6 +25,26 @@ class ManagerOptions : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_manager_options)
 
+        val discountButton = findViewById<Button>(R.id.applyDiscountButton)
+        val discountInput = findViewById<EditText>(R.id.discountPercent)
+        val time = findViewById<EditText>(R.id.duration)
+        val changePriceButton = findViewById<Button>(R.id.changePriceButton)
+        val newQuantity = findViewById<Button>(R.id.changeQuantityButton)
+        val newPrice = findViewById<EditText>(R.id.newPrice)
+        val newQuantityInput = findViewById<EditText>(R.id.newQuantity)
+
+        val selectedItemGroup = findViewById<Group>(R.id.selectedItemGroup)
+        selectedItemGroup.visibility = View.VISIBLE
+
+        // Hide these elements by default
+        discountButton.visibility = View.GONE
+        discountInput.visibility = View.GONE
+        time.visibility = View.GONE
+        changePriceButton.visibility = View.GONE
+        newQuantity.visibility = View.GONE
+        newPrice.visibility = View.GONE
+        newQuantityInput.visibility = View.GONE
+
         inventoryManager = InventoryManager(this)
         inventoryManager.copyInventoryAlways()
 
@@ -71,6 +91,23 @@ class ManagerOptions : AppCompatActivity() {
             } catch (e: Exception) {
                 Toast.makeText(this, "Error searching items: ${e.message}", Toast.LENGTH_LONG).show()
             }
+        }
+
+        searchResultsListView.setOnItemClickListener { _, _, position, _ ->
+            val selectedItem = searchResultsListView.adapter.getItem(position) as String
+            Toast.makeText(this, "Selected: $selectedItem", Toast.LENGTH_SHORT).show()
+
+            discountButton.visibility = View.VISIBLE
+            discountInput.visibility = View.VISIBLE
+            time.visibility = View.VISIBLE
+            changePriceButton.visibility = View.VISIBLE
+            newQuantity.visibility = View.VISIBLE
+            newPrice.visibility = View.VISIBLE
+            newQuantityInput.visibility = View.VISIBLE
+        }
+
+        addItemsButton.setOnClickListener {
+            showAddItemDialog()
         }
 
         addItemsButton.setOnClickListener {

@@ -7,6 +7,14 @@
     android:layout_height="match_parent"
     tools:context=".ManagerOptions">
 
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/selectedItemGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:constraint_referenced_ids="applyDiscountButton,discountPercent,duration,changePriceButton,changeQuantityButton,newPrice,newQuantity,removeItemButton,addItemsButton" />
+
+
     <!-- Navigation Buttons - Always visible -->
     <Button
         android:id="@+id/inventoryButton"
