@@ -18,13 +18,17 @@ class ManagerOptions : AppCompatActivity() {
     private lateinit var searchResultsListView: ListView
     private lateinit var addItemsButton: Button
     private lateinit var removeItemButton: Button
+    private lateinit var selectedItemDetailsGroup: Group
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_manager_options)
+        var selectedItemName: String? = null
 
+        // Get references to UI elements
+        selectedItemDetailsGroup = findViewById(R.id.selectedItemDetailsGroup)
         val discountButton = findViewById<Button>(R.id.applyDiscountButton)
         val discountInput = findViewById<EditText>(R.id.discountPercent)
         val time = findViewById<EditText>(R.id.duration)
@@ -33,17 +37,8 @@ class ManagerOptions : AppCompatActivity() {
         val newPrice = findViewById<EditText>(R.id.newPrice)
         val newQuantityInput = findViewById<EditText>(R.id.newQuantity)
 
-        val selectedItemGroup = findViewById<Group>(R.id.selectedItemGroup)
-        selectedItemGroup.visibility = View.VISIBLE
-
-        // Hide these elements by default
-        discountButton.visibility = View.GONE
-        discountInput.visibility = View.GONE
-        time.visibility = View.GONE
-        changePriceButton.visibility = View.GONE
-        newQuantity.visibility = View.GONE
-        newPrice.visibility = View.GONE
-        newQuantityInput.visibility = View.GONE
+        // Make sure the selected item details are hidden initially
+        selectedItemDetailsGroup.visibility = View.GONE
 
         inventoryManager = InventoryManager(this)
         inventoryManager.copyInventoryAlways()
@@ -64,12 +59,59 @@ class ManagerOptions : AppCompatActivity() {
         addItemsButton = findViewById<Button>(R.id.addItemsButton)
         removeItemButton = findViewById<Button>(R.id.removeItemButton)
 
-        // Initially hide the buttons
-        addItemsButton.visibility = View.GONE
-        removeItemButton.visibility = View.GONE
-
         val searchItemButton = findViewById<Button>(R.id.searchItemButton)
         val searchItemInput = findViewById<EditText>(R.id.searchItem)
+
+        changePriceButton.setOnClickListener {
+            val newPriceValue = newPrice.text.toString()
+            if (selectedItemName != null && newPriceValue.toDoubleOrNull() != null) {
+                try {
+                    inventoryManager.editItem(selectedItemName!!, newPrice = newPriceValue)
+                    Toast.makeText(this, "Price updated.", Toast.LENGTH_SHORT).show()
+                    refreshInventoryDisplay()
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Error updating price: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            } else {
+                Toast.makeText(this, "Select an item and enter a valid price.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        newQuantity.setOnClickListener {
+            val newQuantityValue = newQuantityInput.text.toString()
+            if (selectedItemName != null && newQuantityValue.toIntOrNull() != null) {
+                try {
+                    inventoryManager.editItem(selectedItemName!!, newQuantity = newQuantityValue)
+                    Toast.makeText(this, "Quantity updated.", Toast.LENGTH_SHORT).show()
+                    refreshInventoryDisplay()
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Error updating quantity: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            } else {
+                Toast.makeText(this, "Select an item and enter a valid quantity.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        discountButton.setOnClickListener {
+            val discountPercent = discountInput.text.toString().toDoubleOrNull()
+            if (selectedItemName != null && discountPercent != null) {
+                val currentPrice = inventoryManager.getItemPrice(selectedItemName!!)
+                if (currentPrice != null) {
+                    val discountedPrice = (currentPrice * (1 - discountPercent / 100)).toString()
+                    try {
+                        inventoryManager.editItem(selectedItemName!!, newPrice = discountedPrice)
+                        Toast.makeText(this, "Discount applied. New price: $discountedPrice", Toast.LENGTH_SHORT).show()
+                        refreshInventoryDisplay()
+                    } catch (e: Exception) {
+                        Toast.makeText(this, "Error applying discount: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                } else {
+                    Toast.makeText(this, "Price not found for the selected item.", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Toast.makeText(this, "Select an item and enter a valid discount.", Toast.LENGTH_SHORT).show()
+            }
+        }
 
         searchItemButton.setOnClickListener {
             val searchQuery = searchItemInput.text.toString()
@@ -80,8 +122,12 @@ class ManagerOptions : AppCompatActivity() {
                     val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, searchResults)
                     searchResultsListView.adapter = adapter
                     searchResultsListView.visibility = View.VISIBLE
+
+                    // Hide the details when displaying new search results
+                    selectedItemDetailsGroup.visibility = View.GONE
                 } else {
                     searchResultsListView.visibility = View.GONE
+                    selectedItemDetailsGroup.visibility = View.GONE
                     AlertDialog.Builder(this)
                         .setTitle("No Results")
                         .setMessage("No items found matching \"$searchQuery\".")
@@ -96,18 +142,15 @@ class ManagerOptions : AppCompatActivity() {
         searchResultsListView.setOnItemClickListener { _, _, position, _ ->
             val selectedItem = searchResultsListView.adapter.getItem(position) as String
             Toast.makeText(this, "Selected: $selectedItem", Toast.LENGTH_SHORT).show()
+            selectedItemDetailsGroup.visibility = View.VISIBLE
 
-            discountButton.visibility = View.VISIBLE
-            discountInput.visibility = View.VISIBLE
-            time.visibility = View.VISIBLE
-            changePriceButton.visibility = View.VISIBLE
-            newQuantity.visibility = View.VISIBLE
-            newPrice.visibility = View.VISIBLE
-            newQuantityInput.visibility = View.VISIBLE
-        }
-
-        addItemsButton.setOnClickListener {
-            showAddItemDialog()
+            // Extract item name from selected item string
+            val itemParts = selectedItem.split("\n")
+            if (itemParts.size > 1) {
+                val itemLine = itemParts[1]
+                val itemNameSection = itemLine.split(",")[0]
+                selectedItemName = itemNameSection.substringAfter(":").trim()
+            }
         }
 
         addItemsButton.setOnClickListener {
@@ -123,9 +166,8 @@ class ManagerOptions : AppCompatActivity() {
             usersGroup.visibility = View.GONE
             salesGroup.visibility = View.GONE
             exportSalesButton.visibility = View.GONE
-            // Show the inventory-related buttons when inventory is selected
-            addItemsButton.visibility = View.VISIBLE
-            removeItemButton.visibility = View.VISIBLE
+            // Hide the selected item details when switching to inventory tab
+            selectedItemDetailsGroup.visibility = View.GONE
 
             refreshInventoryDisplay()
         }
@@ -136,9 +178,7 @@ class ManagerOptions : AppCompatActivity() {
             salesGroup.visibility = View.GONE
             exportSalesButton.visibility = View.GONE
             searchResultsListView.visibility = View.GONE
-            // Hide the inventory-related buttons
-            addItemsButton.visibility = View.GONE
-            removeItemButton.visibility = View.GONE
+            selectedItemDetailsGroup.visibility = View.GONE
         }
 
         salesButton.setOnClickListener {
@@ -147,9 +187,7 @@ class ManagerOptions : AppCompatActivity() {
             salesGroup.visibility = View.VISIBLE
             exportSalesButton.visibility = View.VISIBLE
             searchResultsListView.visibility = View.GONE
-            // Hide the inventory-related buttons
-            addItemsButton.visibility = View.GONE
-            removeItemButton.visibility = View.GONE
+            selectedItemDetailsGroup.visibility = View.GONE
         }
 
         backButton.setOnClickListener {
@@ -164,8 +202,12 @@ class ManagerOptions : AppCompatActivity() {
                 val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, inventory)
                 searchResultsListView.adapter = adapter
                 searchResultsListView.visibility = View.VISIBLE
+
+                // Hide the details when refreshing inventory
+                selectedItemDetailsGroup.visibility = View.GONE
             } else {
                 searchResultsListView.visibility = View.GONE
+                selectedItemDetailsGroup.visibility = View.GONE
                 Toast.makeText(this, "Inventory is empty.", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {

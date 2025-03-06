@@ -152,33 +152,45 @@ class InventoryManager(private val context: Context) {
         if (lines.isEmpty()) return
 
         val categoriesRow = lines[0].split(",").toMutableList()
-        var itemsRow = lines[1].split(",").toMutableList()
+        var categoryIndex = -1
 
-        while (itemsRow.size < categoriesRow.size) {
-            itemsRow.add("")
-        }
-
-        var col = 0
-        var categoryFound = false
-        while (col < categoriesRow.size) {
+        for (col in categoriesRow.indices step 5) {
             if (categoriesRow[col] == category) {
-                categoryFound = true
-                itemsRow[col] = itemName
-                itemsRow[col + 1] = quantity
-                itemsRow[col + 2] = price
-                itemsRow[col + 3] = "0"
+                categoryIndex = col
                 break
             }
-            col += 5
         }
 
-        if (!categoryFound) {
+        if (categoryIndex == -1) {
             categoriesRow.addAll(listOf(category, "QTY", "SRP", "SOLD", ""))
-            itemsRow.addAll(listOf(itemName, quantity, price, "0", ""))
+            categoryIndex = categoriesRow.size - 5
+            lines[0] = categoriesRow.joinToString(",")
         }
 
-        lines[0] = categoriesRow.joinToString(",")
-        lines[1] = itemsRow.joinToString(",")
+        var inserted = false
+        for (row in 1 until lines.size) {
+            val itemsRow = lines[row].split(",").toMutableList()
+            while (itemsRow.size < categoriesRow.size) itemsRow.add("")
+
+            if (itemsRow[categoryIndex].isEmpty()) {
+                itemsRow[categoryIndex] = itemName
+                itemsRow[categoryIndex + 1] = quantity
+                itemsRow[categoryIndex + 2] = price
+                itemsRow[categoryIndex + 3] = "0"
+                lines[row] = itemsRow.joinToString(",")
+                inserted = true
+                break
+            }
+        }
+
+        if (!inserted) {
+            val newRow = MutableList(categoriesRow.size) { "" }
+            newRow[categoryIndex] = itemName
+            newRow[categoryIndex + 1] = quantity
+            newRow[categoryIndex + 2] = price
+            newRow[categoryIndex + 3] = "0"
+            lines.add(newRow.joinToString(","))
+        }
 
         file.writeText(lines.joinToString("\n"))
     }
@@ -189,21 +201,23 @@ class InventoryManager(private val context: Context) {
         if (lines.size < 2) return
 
         val header = lines[0].split(",")
-        val itemsRow = lines[1].split(",").toMutableList()
 
-        var col = 0
-        while (col < header.size && col < itemsRow.size) {
-            if (itemsRow[col] == itemName) {
-                itemsRow[col] = ""
-                itemsRow[col + 1] = ""
-                itemsRow[col + 2] = ""
-                itemsRow[col + 3] = ""
-                break
+        for (row in 1 until lines.size) {
+            val itemsRow = lines[row].split(",").toMutableList()
+            var col = 0
+            while (col < header.size && col + 3 < itemsRow.size) {
+                if (itemsRow[col] == itemName) {
+                    itemsRow[col] = ""
+                    itemsRow[col + 1] = ""
+                    itemsRow[col + 2] = ""
+                    itemsRow[col + 3] = ""
+                    break
+                }
+                col += 5
             }
-            col += 5
+            lines[row] = itemsRow.joinToString(",")
         }
 
-        lines[1] = itemsRow.joinToString(",")
         file.writeText(lines.joinToString("\n"))
     }
 
@@ -214,7 +228,98 @@ class InventoryManager(private val context: Context) {
         newPrice: String? = null,
         newSold: String? = null
     ) {
-        // To be implemented as needed.
+        val file = File(context.filesDir, fileName)
+        val lines = file.readLines().toMutableList()
+        if (lines.size < 2) return
+
+        val header = lines[0].split(",")
+
+        for (row in 1 until lines.size) {
+            val itemsRow = lines[row].split(",").toMutableList()
+            var col = 0
+            while (col < header.size && col + 3 < itemsRow.size) {
+                if (itemsRow[col] == itemName) {
+                    itemsRow[col] = newItemName
+                    if (newQuantity != null) itemsRow[col + 1] = newQuantity
+                    if (newPrice != null) itemsRow[col + 2] = newPrice
+                    if (newSold != null) itemsRow[col + 3] = newSold
+                    break
+                }
+                col += 5
+            }
+            lines[row] = itemsRow.joinToString(",")
+        }
+
+        file.writeText(lines.joinToString("\n"))
+    }
+
+    fun getItemPrice(itemName: String): Double? {
+        val file = File(context.filesDir, fileName)
+        if (!file.exists()) return null
+
+        val lines = file.readLines()
+        if (lines.size < 2) return null
+
+        val header = lines[0].split(",")
+
+        for (row in 1 until lines.size) {
+            val itemsRow = lines[row].split(",")
+            var col = 0
+            while (col < header.size && col + 3 < itemsRow.size) {
+                if (itemsRow[col].trim().equals(itemName, ignoreCase = true)) {
+                    val price = itemsRow[col + 2].trim()
+                    return price.toDoubleOrNull()
+                }
+                col += 5
+            }
+        }
+        return null
+    }
+
+    fun getItemQuantity(itemName: String): Int? {
+        val file = File(context.filesDir, fileName)
+        if (!file.exists()) return null
+
+        val lines = file.readLines()
+        if (lines.size < 2) return null
+
+        val header = lines[0].split(",")
+
+        for (row in 1 until lines.size) {
+            val itemsRow = lines[row].split(",")
+            var col = 0
+            while (col < header.size && col + 3 < itemsRow.size) {
+                if (itemsRow[col].trim().equals(itemName, ignoreCase = true)) {
+                    val quantity = itemsRow[col + 1].trim()
+                    return quantity.toIntOrNull()
+                }
+                col += 5
+            }
+        }
+        return null
+    }
+
+    fun getItemSold(itemName: String): Int? {
+        val file = File(context.filesDir, fileName)
+        if (!file.exists()) return null
+
+        val lines = file.readLines()
+        if (lines.size < 2) return null
+
+        val header = lines[0].split(",")
+
+        for (row in 1 until lines.size) {
+            val itemsRow = lines[row].split(",")
+            var col = 0
+            while (col < header.size && col + 3 < itemsRow.size) {
+                if (itemsRow[col].trim().equals(itemName, ignoreCase = true)) {
+                    val sold = itemsRow[col + 3].trim()
+                    return sold.toIntOrNull()
+                }
+                col += 5
+            }
+        }
+        return null
     }
 
     fun copyInventoryAlways() {

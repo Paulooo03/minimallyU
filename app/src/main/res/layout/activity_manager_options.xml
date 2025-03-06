@@ -7,13 +7,13 @@
     android:layout_height="match_parent"
     tools:context=".ManagerOptions">
 
+    <!-- Create a separate group specifically for the item details fields that should only be visible after selection -->
     <androidx.constraintlayout.widget.Group
-        android:id="@+id/selectedItemGroup"
+        android:id="@+id/selectedItemDetailsGroup"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        app:constraint_referenced_ids="applyDiscountButton,discountPercent,duration,changePriceButton,changeQuantityButton,newPrice,newQuantity,removeItemButton,addItemsButton" />
-
+        app:constraint_referenced_ids="applyDiscountButton,discountPercent,duration,changePriceButton,changeQuantityButton,newPrice,newQuantity" />
 
     <!-- Navigation Buttons - Always visible -->
     <Button
@@ -70,7 +70,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        app:constraint_referenced_ids="List,searchItem,searchItemButton,applyDiscountButton,discountPercent,duration,changePriceButton,changeQuantityButton,newPrice,newQuantity" />
+        app:constraint_referenced_ids="List,searchItem,searchItemButton,addItemsButton,removeItemButton,resetInventoryButton" />
 
     <!-- List view for items -->
     <ListView
@@ -226,7 +226,6 @@
         android:backgroundTint="#000000"
         android:text="Add Item"
         android:textColor="#FFFFFF"
-        android:visibility="gone"
         app:layout_constraintStart_toEndOf="@+id/removeItemButton"
         app:layout_constraintEnd_toStartOf="@+id/resetInventoryButton"
         app:layout_constraintBottom_toTopOf="@+id/backButton"
@@ -355,7 +354,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Remove Item"
-        android:visibility="gone"
         android:backgroundTint="#000000"
         android:textColor="#FFFFFF"
         app:layout_constraintStart_toStartOf="parent"
