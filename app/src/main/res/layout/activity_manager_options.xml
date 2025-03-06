@@ -218,6 +218,19 @@
         app:layout_constraintBottom_toBottomOf="@+id/newPrice"
         android:layout_marginEnd="16dp" />
 
+    <Button
+        android:id="@+id/removeItemButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Remove Item"
+        android:backgroundTint="#000000"
+        android:textColor="#FFFFFF"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/addItemsButton"
+        app:layout_constraintBottom_toTopOf="@+id/backButton"
+        android:layout_marginBottom="24dp"
+        android:layout_marginEnd="16dp"/>
+
     <!-- Add Item button - Moved below newQuantity -->
     <Button
         android:id="@+id/addItemsButton"
@@ -348,19 +361,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/salesButton"
         app:layout_constraintBottom_toTopOf="@+id/exportSalesButton" />
-
-    <Button
-        android:id="@+id/removeItemButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Remove Item"
-        android:backgroundTint="#000000"
-        android:textColor="#FFFFFF"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/addItemsButton"
-        app:layout_constraintBottom_toTopOf="@+id/backButton"
-        android:layout_marginBottom="24dp"
-        android:layout_marginEnd="16dp"/>
 
     <Button
         android:id="@+id/exportSalesButton"

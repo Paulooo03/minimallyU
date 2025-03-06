@@ -3,6 +3,8 @@ package com.application.minimallyu
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
@@ -19,9 +21,21 @@ class ManagerOptions : AppCompatActivity() {
     private lateinit var addItemsButton: Button
     private lateinit var removeItemButton: Button
     private lateinit var selectedItemDetailsGroup: Group
+    private var originalPrices = mutableMapOf<String, Double>()
+    private var discountActive = false
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        data class InventoryItem(
+            val name: String,
+            var price: Double,
+            var quantity: Int
+        )
+
+        var searchResultsList: MutableList<InventoryItem> = mutableListOf()
+
+
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_manager_options)
@@ -62,6 +76,7 @@ class ManagerOptions : AppCompatActivity() {
         val searchItemButton = findViewById<Button>(R.id.searchItemButton)
         val searchItemInput = findViewById<EditText>(R.id.searchItem)
 
+
         changePriceButton.setOnClickListener {
             val newPriceValue = newPrice.text.toString()
             if (selectedItemName != null && newPriceValue.toDoubleOrNull() != null) {
@@ -92,24 +107,126 @@ class ManagerOptions : AppCompatActivity() {
             }
         }
 
-        discountButton.setOnClickListener {
-            val discountPercent = discountInput.text.toString().toDoubleOrNull()
-            if (selectedItemName != null && discountPercent != null) {
-                val currentPrice = inventoryManager.getItemPrice(selectedItemName!!)
-                if (currentPrice != null) {
-                    val discountedPrice = (currentPrice * (1 - discountPercent / 100)).toString()
-                    try {
-                        inventoryManager.editItem(selectedItemName!!, newPrice = discountedPrice)
-                        Toast.makeText(this, "Discount applied. New price: $discountedPrice", Toast.LENGTH_SHORT).show()
-                        refreshInventoryDisplay()
-                    } catch (e: Exception) {
-                        Toast.makeText(this, "Error applying discount: ${e.message}", Toast.LENGTH_LONG).show()
+        fun refreshSearchResults() {
+            val displayList = searchResultsList.map { "${it.name} - ${it.price}" }
+            val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, displayList)
+            searchResultsListView.adapter = adapter
+        }
+
+        fun applyDiscount(discountPercent: Double) {
+            try {
+                // Get all items currently displayed in the list
+                val items = inventoryManager.loadInventory()
+
+                // Store original prices if not already stored
+                if (originalPrices.isEmpty()) {
+                    for (item in items) {
+                        // Parse item string to extract name and price
+                        val itemParts = item.split("\n")
+                        if (itemParts.size > 1) {
+                            val itemLine = itemParts[1]
+                            val itemParts = itemLine.split(",")
+                            if (itemParts.size >= 3) {
+                                val itemName = itemParts[0].substringAfter(":").trim()
+                                val itemPrice = itemParts[2].substringAfter(":").trim().toDoubleOrNull() ?: continue
+                                originalPrices[itemName] = itemPrice
+                            }
+                        }
                     }
-                } else {
-                    Toast.makeText(this, "Price not found for the selected item.", Toast.LENGTH_SHORT).show()
                 }
+
+                // Apply discount to each item in inventory
+                for ((name, originalPrice) in originalPrices) {
+                    val discountedPrice = originalPrice * (1 - discountPercent / 100)
+                    try {
+                        // Update the item price in the database/inventory
+                        inventoryManager.editItem(name, newPrice = discountedPrice.toString())
+                    } catch (e: Exception) {
+                        Toast.makeText(this, "Error updating price for $name: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                // Refresh the display to show updated prices
+                refreshInventoryDisplay()
+
+                discountActive = true
+                Toast.makeText(this, "Discount of $discountPercent% applied successfully", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(this, "Error applying discount: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+
+        fun removeDiscount() {
+            // Logic to restore original prices or stop the discount
+            // Example: Reset SRP back to original values
+            AlertDialog.Builder(this)
+                .setTitle("Discount Ended")
+                .setMessage("The discount period has ended.")
+                .setPositiveButton("OK", null)
+                .show()
+        }
+
+        fun restoreOriginalPrices() {
+            val adapter = searchResultsListView.adapter as? ArrayAdapter<String> ?: return
+            for (i in 0 until adapter.count) {
+                val itemString = adapter.getItem(i) ?: continue
+
+                val lines = itemString.split("\n")
+                if (lines.size < 2) continue
+                val itemLine = lines[1]
+
+                val namePart = itemLine.split(",")[0].substringAfter(":").trim()
+                val originalPrice = originalPrices[namePart] ?: continue
+
+                val updatedLine = itemLine.replace(Regex("SRP: \\d+(\\.\\d+)?")) { "SRP: ${"%.2f".format(originalPrice)}" }
+                val updatedItem = "${lines[0]}\n$updatedLine"
+
+                adapter.insert(updatedItem, i)
+                adapter.remove(itemString)
+            }
+            for (item in searchResultsList) {
+                originalPrices[item.name]?.let { originalPrice ->
+                    item.price = originalPrice
+                }
+            }
+            originalPrices.clear()
+            discountActive = false
+            adapter.notifyDataSetChanged()
+            Toast.makeText(this, "Discount period ended. Prices restored.", Toast.LENGTH_SHORT).show()
+        }
+
+        fun startDiscountTimer(hours: Long) {
+            val delayMillis = hours * 60 * 60 * 1000 // Convert hours to milliseconds
+
+            Handler(Looper.getMainLooper()).postDelayed({
+                restoreOriginalPrices()
+                removeDiscount()
+            }, delayMillis)
+        }
+
+        discountButton.setOnClickListener {
+            val discountText = discountInput.text.toString()
+            val timeText = time.text.toString()
+
+            if (discountText.isEmpty() || timeText.isEmpty()) {
+                Toast.makeText(this, "Please input time and discount percent", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val discountPercent = discountText.toDoubleOrNull()
+            val timeInHours = timeText.toLongOrNull()
+
+            if (discountPercent == null || timeInHours == null || discountPercent <= 0.0 || timeInHours <= 0) {
+                Toast.makeText(this, "Invalid discount or time entered", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            if (!discountActive) {
+                applyDiscount(discountPercent)
+                startDiscountTimer(timeInHours)
+                Toast.makeText(this, "Discount applied for $timeInHours hours!", Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(this, "Select an item and enter a valid discount.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "A discount is already active!", Toast.LENGTH_SHORT).show()
             }
         }
 

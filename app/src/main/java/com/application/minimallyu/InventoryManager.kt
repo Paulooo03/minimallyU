@@ -162,9 +162,18 @@ class InventoryManager(private val context: Context) {
         }
 
         if (categoryIndex == -1) {
+            // Add the new category block to header
             categoriesRow.addAll(listOf(category, "QTY", "SRP", "SOLD", ""))
-            categoryIndex = categoriesRow.size - 5
             lines[0] = categoriesRow.joinToString(",")
+
+            // Expand all existing rows with 5 empty cells for the new category
+            for (row in 1 until lines.size) {
+                val itemsRow = lines[row].split(",").toMutableList()
+                itemsRow.addAll(listOf("", "", "", "", ""))
+                lines[row] = itemsRow.joinToString(",")
+            }
+
+            categoryIndex = categoriesRow.size - 5
         }
 
         var inserted = false
