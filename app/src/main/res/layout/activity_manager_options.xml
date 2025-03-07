@@ -13,7 +13,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        app:constraint_referenced_ids="applyDiscountButton,discountPercent,duration,changePriceButton,changeQuantityButton,newPrice,newQuantity" />
+        app:constraint_referenced_ids="saveButton,changePriceButton,changeQuantityButton,newPrice,newQuantity" />
 
     <!-- Navigation Buttons - Always visible -->
     <Button
@@ -98,7 +98,7 @@
         android:background="@android:drawable/editbox_background"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/searchItemButton"
-        app:layout_constraintBottom_toTopOf="@+id/applyDiscountButton" />
+        app:layout_constraintBottom_toTopOf="@+id/changePriceButton"/>
 
     <Button
         android:id="@+id/searchItemButton"
@@ -123,46 +123,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/backButton"
         android:layout_marginBottom="24dp"/>
-
-    <!-- Discount section -->
-    <Button
-        android:id="@+id/applyDiscountButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:backgroundTint="#000000"
-        android:text="Apply Discount"
-        android:textColor="#FFFFFF"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/changePriceButton"
-        android:layout_marginStart="16dp"
-        android:layout_marginBottom="24dp" />
-
-    <EditText
-        android:id="@+id/discountPercent"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:hint="Percent"
-        android:inputType="text"
-        android:padding="12dp"
-        android:background="@android:drawable/editbox_background"
-        app:layout_constraintStart_toEndOf="@+id/applyDiscountButton"
-        app:layout_constraintEnd_toStartOf="@+id/duration"
-        app:layout_constraintBottom_toBottomOf="@+id/applyDiscountButton"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp" />
-
-    <EditText
-        android:id="@+id/duration"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:hint="Duration"
-        android:inputType="text"
-        android:padding="12dp"
-        android:background="@android:drawable/editbox_background"
-        app:layout_constraintStart_toEndOf="@+id/discountPercent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="@+id/applyDiscountButton"
-        android:layout_marginEnd="16dp" />
 
     <!-- Price and Quantity change section -->
     <Button
