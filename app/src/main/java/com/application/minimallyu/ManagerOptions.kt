@@ -1,18 +1,29 @@
 package com.application.minimallyu
 
 import android.annotation.SuppressLint
+import android.content.ContentValues
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.provider.MediaStore
 import android.view.View
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.Group
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import java.io.File
+import java.io.FileOutputStream
+import java.io.OutputStream
 
 class ManagerOptions : AppCompatActivity() {
 
@@ -21,8 +32,6 @@ class ManagerOptions : AppCompatActivity() {
     private lateinit var addItemsButton: Button
     private lateinit var removeItemButton: Button
     private lateinit var selectedItemDetailsGroup: Group
-    private var originalPrices = mutableMapOf<String, Double>()
-    private var discountActive = false
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,12 +56,14 @@ class ManagerOptions : AppCompatActivity() {
         val newQuantity = findViewById<Button>(R.id.changeQuantityButton)
         val newPrice = findViewById<EditText>(R.id.newPrice)
         val newQuantityInput = findViewById<EditText>(R.id.newQuantity)
+        val exportInventoryReport = findViewById<Button>(R.id.exportInventoryButton)
 
         // Make sure the selected item details are hidden initially
         selectedItemDetailsGroup.visibility = View.GONE
 
         inventoryManager = InventoryManager(this)
-        inventoryManager.copyInventoryAlways()
+        inventoryManager.initializeInventory(this) // Ensure inventory_export.csv exists
+        inventoryManager.loadInventory() // Now loads from inventory_export.csv
 
         // Initialize the ListView
         searchResultsListView = findViewById(R.id.List)
@@ -72,7 +83,6 @@ class ManagerOptions : AppCompatActivity() {
 
         val searchItemButton = findViewById<Button>(R.id.searchItemButton)
         val searchItemInput = findViewById<EditText>(R.id.searchItem)
-
 
         changePriceButton.setOnClickListener {
             val newPriceValue = newPrice.text.toString()
@@ -108,6 +118,55 @@ class ManagerOptions : AppCompatActivity() {
             val displayList = searchResultsList.map { "${it.name} - ${it.price}" }
             val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, displayList)
             searchResultsListView.adapter = adapter
+        }
+
+        fun Context.exportInventoryToDownloads(csvContent: String): String {
+            val fileName = "inventory_export.csv"
+            var outputStream: OutputStream? = null
+
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    // For Android 10+ (Scoped Storage)
+                    val contentValues = ContentValues().apply {
+                        put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                        put(MediaStore.Downloads.MIME_TYPE, "text/csv")
+                        put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                    }
+
+                    val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                    uri?.let { outputStream = contentResolver.openOutputStream(it) }
+                } else {
+                    // For Android 9 and below
+                    val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                    val file = File(downloadsDir, fileName)
+                    outputStream = FileOutputStream(file)
+                }
+
+                outputStream?.use {
+                    it.write(csvContent.toByteArray())
+                }
+
+                return "Inventory exported to Downloads as $fileName"
+            } catch (e: Exception) {
+                return "Error exporting file: ${e.message}"
+            }
+        }
+
+        exportInventoryReport.setOnClickListener {
+            val csvContent = inventoryManager.getInventoryAsCSV() // Ensure this function returns CSV data
+            val resultMessage = exportInventoryToDownloads(csvContent)
+            Toast.makeText(this, resultMessage, Toast.LENGTH_LONG).show()
+        }
+
+        fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+            if (requestCode == 1) {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "Permission granted! You can now export the file.", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Permission denied! Cannot export the file.", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
 
         searchItemButton.setOnClickListener {

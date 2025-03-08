@@ -1,69 +1,117 @@
 package com.application.minimallyu
 
 import android.content.Context
+import android.os.Environment
 import android.util.Log
 import java.io.File
 import java.io.IOException
 
 class InventoryManager(private val context: Context) {
 
-    private val fileName = "inventory.csv"
-
+    private val fileName = "inventory_export.csv"
+    private val inventoryFile = File(context.filesDir, fileName)
     init {
         copyInventoryIfNeeded()
     }
 
-    private fun copyInventoryIfNeeded() {
-        val file = File(context.filesDir, fileName)
+    fun initializeInventory(context: Context) {
+        val file = File(context.filesDir, "inventory_export.csv")
+
         if (!file.exists()) {
-            context.assets.open(fileName).use { inputStream ->
-                file.outputStream().use { outputStream ->
-                    inputStream.copyTo(outputStream)
+            try {
+                context.assets.open("inventory.csv").use { inputStream ->
+                    file.outputStream().use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
                 }
+            } catch (e: IOException) {
+                e.printStackTrace()
             }
-            Log.d("InventoryManager", "Inventory copied from assets.")
+        }
+    }
+
+    fun getInventoryAsCSV(): String {
+        val inventoryData = loadInventory()
+        val csvBuilder = StringBuilder()
+
+        csvBuilder.append("Category,Name,Qty,SRP,SOLD\n") // Header row
+        for (item in inventoryData) {
+            csvBuilder.append(item.replace("\n", ",")).append("\n")
+        }
+
+        return csvBuilder.toString()
+    }
+
+    fun exportInventoryReportToDownloads(): String {
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val outputFile = File(downloadsDir, fileName)
+
+        return try {
+            if (!inventoryFile.exists()) {
+                Log.e("InventoryManager", "Inventory file does not exist.")
+                return "Export failed: Inventory file not found."
+            }
+
+            inventoryFile.copyTo(outputFile, overwrite = true)
+            Log.d("InventoryManager", "Inventory report exported to: ${outputFile.absolutePath}")
+            "Export successful: ${outputFile.absolutePath}"
+        } catch (e: IOException) {
+            Log.e("InventoryManager", "Error exporting inventory report: ${e.message}")
+            "Export failed: ${e.message}"
+        }
+    }
+
+    private fun copyInventoryIfNeeded() {
+        if (!inventoryFile.exists()) {
+            try {
+                context.assets.open(fileName).use { inputStream ->
+                    inventoryFile.outputStream().use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+                Log.d("InventoryManager", "Inventory copied from assets.")
+            } catch (e: IOException) {
+                Log.e("InventoryManager", "Error copying inventory: ${e.message}")
+            }
         }
     }
 
     fun resetInventory() {
-        val file = File(context.filesDir, fileName)
-        context.assets.open(fileName).use { inputStream ->
-            file.outputStream().use { outputStream ->
-                inputStream.copyTo(outputStream)
+        try {
+            context.assets.open(fileName).use { inputStream ->
+                inventoryFile.outputStream().use { outputStream ->
+                    inputStream.copyTo(outputStream)
+                }
             }
+            Log.d("InventoryManager", "Inventory reset from assets.")
+        } catch (e: IOException) {
+            Log.e("InventoryManager", "Error resetting inventory: ${e.message}")
         }
-        Log.d("InventoryManager", "Inventory reset from assets.")
     }
 
     fun loadInventory(): List<String> {
+        copyInventoryIfNeeded()
         val inventory = mutableListOf<String>()
         try {
-            val file = File(context.filesDir, fileName)
-            Log.d("InventoryManager", "Loading inventory from: ${file.absolutePath}")
-            if (!file.exists()) {
+            if (!inventoryFile.exists()) {
                 Log.e("InventoryManager", "Inventory file does NOT exist!")
                 return inventory
             }
 
-            val lines = file.readLines()
-            Log.d("InventoryManager", "Inventory lines: ${lines.size}")
+            val lines = inventoryFile.readLines()
             if (lines.size < 2) {
                 Log.e("InventoryManager", "Inventory file does not have enough rows.")
                 return inventory
             }
 
-            // Extracting categories
             val categories = lines[0].split(",")
 
-            // Read from second row downwards
             for (row in 1 until lines.size) {
                 val items = lines[row].split(",")
 
-                // Ensure we have enough items to process
                 if (items.size < categories.size) continue
 
                 for (col in categories.indices step 5) {
-                    // Ensure we don't go out of bounds
                     if (col + 4 >= items.size) break
 
                     val category = categories[col].trim()
@@ -73,9 +121,7 @@ class InventoryManager(private val context: Context) {
                     val sold = items[col + 3].trim()
 
                     if (itemName.isNotEmpty()) {
-                        inventory.add(
-                            "Category: $category\nItem: $itemName\nQty: $qty\nSRP: $srp\nSold: $sold"
-                        )
+                        inventory.add("Category: $category\nItem: $itemName\nQty: $qty\nSRP: $srp\nSold: $sold")
                     }
                 }
             }
@@ -85,11 +131,10 @@ class InventoryManager(private val context: Context) {
         return inventory
     }
 
-
     fun searchItem(query: String): List<String> {
         val results = mutableListOf<String>()
         try {
-            val file = File(context.filesDir, fileName)
+            val file = inventoryFile
             if (!file.exists()) return results
 
             val lines = file.readLines()
@@ -129,9 +174,8 @@ class InventoryManager(private val context: Context) {
     }
 
     fun getCategories(): List<String> {
-        val file = File(context.filesDir, fileName)
-        if (!file.exists()) return emptyList()
-        val firstLine = file.bufferedReader().readLine() ?: return emptyList()
+        if (!inventoryFile.exists()) return emptyList()
+        val firstLine = inventoryFile.bufferedReader().readLine() ?: return emptyList()
         val cells = firstLine.split(",")
         val categories = mutableListOf<String>()
         var i = 0
@@ -146,7 +190,7 @@ class InventoryManager(private val context: Context) {
     }
 
     fun addItem(itemName: String, category: String, price: String, quantity: String) {
-        val file = File(context.filesDir, fileName)
+        val file = inventoryFile
         val lines = file.readLines().toMutableList()
 
         if (lines.isEmpty()) return
@@ -205,7 +249,7 @@ class InventoryManager(private val context: Context) {
     }
 
     fun removeItem(itemName: String) {
-        val file = File(context.filesDir, fileName)
+        val file = inventoryFile
         val lines = file.readLines().toMutableList()
         if (lines.size < 2) return
 
@@ -237,7 +281,7 @@ class InventoryManager(private val context: Context) {
         newPrice: String? = null,
         newSold: String? = null
     ) {
-        val file = File(context.filesDir, fileName)
+        val file = inventoryFile
         val lines = file.readLines().toMutableList()
         if (lines.size < 2) return
 
@@ -263,7 +307,7 @@ class InventoryManager(private val context: Context) {
     }
 
     fun getItemPrice(itemName: String): Double? {
-        val file = File(context.filesDir, fileName)
+        val file = inventoryFile
         if (!file.exists()) return null
 
         val lines = file.readLines()
@@ -286,7 +330,7 @@ class InventoryManager(private val context: Context) {
     }
 
     fun getItemQuantity(itemName: String): Int? {
-        val file = File(context.filesDir, fileName)
+        val file = inventoryFile
         if (!file.exists()) return null
 
         val lines = file.readLines()
@@ -309,7 +353,7 @@ class InventoryManager(private val context: Context) {
     }
 
     fun getItemSold(itemName: String): Int? {
-        val file = File(context.filesDir, fileName)
+        val file = inventoryFile
         if (!file.exists()) return null
 
         val lines = file.readLines()
@@ -332,7 +376,7 @@ class InventoryManager(private val context: Context) {
     }
 
     fun copyInventoryAlways() {
-        val file = File(context.filesDir, fileName)
+        val file = inventoryFile
         try {
             context.assets.open(fileName).use { inputStream ->
                 file.outputStream().use { outputStream ->

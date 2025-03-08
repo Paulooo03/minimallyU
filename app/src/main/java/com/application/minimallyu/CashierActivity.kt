@@ -31,7 +31,8 @@ class CashierActivity : AppCompatActivity() {
         items = findViewById(R.id.itemsList)
 
         inventoryManager = InventoryManager(this)
-        inventoryManager.copyInventoryAlways()
+        inventoryManager.initializeInventory(this) // Ensure inventory_export.csv exists
+        inventoryManager.loadInventory() // Now loads from inventory_export.csv
 
         try {
             val inventory = inventoryManager.loadInventory()
@@ -81,5 +82,25 @@ class CashierActivity : AppCompatActivity() {
             }
             builder.show()
         }
+    }
+    private fun loadInventoryList() {
+        try {
+            val inventory = inventoryManager.loadInventory()
+            if (inventory.isNotEmpty()) {
+                val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, inventory)
+                items.adapter = adapter
+                items.visibility = View.VISIBLE
+            } else {
+                items.visibility = View.GONE
+                Toast.makeText(this, "Inventory is empty.", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error loading inventory: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadInventoryList() // Refresh inventory when returning
     }
 }
