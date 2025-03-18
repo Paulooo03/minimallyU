@@ -300,7 +300,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/userPosition" />
 
-    <AutoCompleteTextView
+    <Spinner
         android:id="@+id/userPosition"
         android:layout_width="0dp"
         android:layout_height="wrap_content"

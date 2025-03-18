@@ -3,13 +3,10 @@ package com.application.minimallyu
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.os.Handler
-import android.os.Looper
 import android.provider.MediaStore
 import android.view.View
 import android.widget.*
@@ -17,10 +14,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.Group
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
@@ -28,12 +21,15 @@ import java.io.OutputStream
 class ManagerOptions : AppCompatActivity() {
 
     private lateinit var inventoryManager: InventoryManager
+    private lateinit var users: Users
     private lateinit var searchResultsListView: ListView
     private lateinit var addItemsButton: Button
     private lateinit var removeItemButton: Button
     private lateinit var selectedItemDetailsGroup: Group
+    private lateinit var selectedUserDetailsGroup: Group
+    private lateinit var userPosition: Spinner
 
-    @SuppressLint("MissingInflatedId")
+    @SuppressLint("MissingInflatedId", "CutPasteId", "WrongViewCast")
     override fun onCreate(savedInstanceState: Bundle?) {
 
         data class InventoryItem(
@@ -44,19 +40,39 @@ class ManagerOptions : AppCompatActivity() {
 
         var searchResultsList: MutableList<InventoryItem> = mutableListOf()
 
-
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_manager_options)
         var selectedItemName: String? = null
+        var selectedUserName: String? = null
 
-        // Get references to UI elements
+        // inventory variables section
         selectedItemDetailsGroup = findViewById(R.id.selectedItemDetailsGroup)
         val changePriceButton = findViewById<Button>(R.id.changePriceButton)
         val newQuantity = findViewById<Button>(R.id.changeQuantityButton)
         val newPrice = findViewById<EditText>(R.id.newPrice)
         val newQuantityInput = findViewById<EditText>(R.id.newQuantity)
         val exportInventoryReport = findViewById<Button>(R.id.exportInventoryButton)
+        val exportSalesButton = findViewById<Button>(R.id.exportSalesButton)
+        addItemsButton = findViewById<Button>(R.id.addItemsButton)
+        removeItemButton = findViewById<Button>(R.id.removeItemButton)
+        val searchItemButton = findViewById<Button>(R.id.searchItemButton)
+        val searchItemInput = findViewById<EditText>(R.id.searchItem)
+
+        // users variables section
+        val usersList = findViewById<ListView>(R.id.usersList)
+        val removeUserButton = findViewById<Button>(R.id.removeUserButton)
+        val addUsersButton = findViewById<Button>(R.id.addUsersButton)
+        val newPasswordButton = findViewById<Button>(R.id.newPasswordButton)
+        val userName = findViewById<EditText>(R.id.userName)
+        val password = findViewById<EditText>(R.id.password)
+        removeUserButton.visibility = View.GONE
+        newPasswordButton.visibility = View.GONE
+        val userPosition = findViewById<Spinner>(R.id.userPosition)
+        val userRoles = arrayOf("Cashier", "Manager")
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, userRoles)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        userPosition.adapter = adapter
 
         // Make sure the selected item details are hidden initially
         selectedItemDetailsGroup.visibility = View.GONE
@@ -64,6 +80,7 @@ class ManagerOptions : AppCompatActivity() {
         inventoryManager = InventoryManager(this)
         inventoryManager.initializeInventory(this) // Ensure inventory_export.csv exists
         inventoryManager.loadInventory() // Now loads from inventory_export.csv
+        users = Users(this)
 
         // Initialize the ListView
         searchResultsListView = findViewById(R.id.List)
@@ -76,14 +93,73 @@ class ManagerOptions : AppCompatActivity() {
         val inventoryGroup = findViewById<Group>(R.id.inventoryGroup)
         val usersGroup = findViewById<Group>(R.id.usersGroup)
         val salesGroup = findViewById<Group>(R.id.salesGroup)
-        val exportSalesButton = findViewById<Button>(R.id.exportSalesButton)
 
-        addItemsButton = findViewById<Button>(R.id.addItemsButton)
-        removeItemButton = findViewById<Button>(R.id.removeItemButton)
+        //user-related section
 
-        val searchItemButton = findViewById<Button>(R.id.searchItemButton)
-        val searchItemInput = findViewById<EditText>(R.id.searchItem)
+        usersList.setOnItemClickListener { adapterView, view, position, id ->
+            try {
+                // Get the full user map from the adapter
+                val userMap = adapterView.adapter.getItem(position) as Map<*, *>
 
+                // Extract just the username from the map
+                selectedUserName = userMap["Username"]?.toString()
+
+                Toast.makeText(this, "Selected User: $selectedUserName", Toast.LENGTH_SHORT).show()
+
+                // Show buttons only after a user is selected
+                removeUserButton.visibility = View.VISIBLE
+                newPasswordButton.visibility = View.VISIBLE
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(this, "Error selecting user: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        fun refreshUsersDisplay() {
+            val userList = users.loadUsers()
+            if (userList.isNotEmpty()) {
+                // Keep the original format using the full user maps
+                val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, userList)
+                usersList.adapter = adapter
+            } else {
+                Toast.makeText(this, "No users found.", Toast.LENGTH_SHORT).show()
+            }
+            println("Users button clicked: usersGroup is now visible.")
+        }
+
+        fun hideRemoveUserButtonAndNewPasswordButton() {
+            findViewById<Button>(R.id.removeUserButton)?.visibility = View.GONE
+            findViewById<Button>(R.id.newPasswordButton)?.visibility = View.GONE
+        }
+
+        removeUserButton.setOnClickListener{
+            selectedUserName?.let {
+                users.removeUser(it)
+                Toast.makeText(this, "User removed: $it", Toast.LENGTH_SHORT).show()
+                refreshUsersDisplay()
+                removeUserButton.visibility = View.GONE
+                newPasswordButton.visibility = View.GONE
+            }?:Toast.makeText(this,"No user selected", Toast.LENGTH_SHORT).show()
+        }
+
+        addUsersButton.setOnClickListener{
+            var userNameStr = userName.text.toString()
+            var passwordStr = password.text.toString()
+            var userPositionStr = userPosition.selectedItem.toString()
+
+            //checks the inputs
+            if(userNameStr.isEmpty() || passwordStr.isEmpty()){
+                Toast.makeText(this,"Please fill in all required fields", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }else{
+                users.addUsers(userNameStr,userPositionStr,passwordStr)
+                Toast.makeText(this,"Successfully added:$userNameStr", Toast.LENGTH_SHORT).show()
+                refreshUsersDisplay()
+            }
+        }
+
+        //______________________________________________________________________________________________________________//
+        //inventory-related section
         changePriceButton.setOnClickListener {
             val newPriceValue = newPrice.text.toString()
             if (selectedItemName != null && newPriceValue.toDoubleOrNull() != null) {
@@ -235,7 +311,11 @@ class ManagerOptions : AppCompatActivity() {
             exportSalesButton.visibility = View.GONE
             searchResultsListView.visibility = View.GONE
             selectedItemDetailsGroup.visibility = View.GONE
+
+            usersGroup.post{hideRemoveUserButtonAndNewPasswordButton()}
+            refreshUsersDisplay()
         }
+
 
         salesButton.setOnClickListener {
             inventoryGroup.visibility = View.GONE
@@ -350,8 +430,6 @@ class ManagerOptions : AppCompatActivity() {
             val itemDisplayNames = mutableListOf<String>()
 
             for (item in inventory) {
-                // Parse the item string to extract just the name
-                // Format is typically "Category: CategoryName\nItem: ItemName, Qty: X, SRP: Y, Sold: Z"
                 val itemParts = item.split("\n")
                 if (itemParts.size > 1) {
                     val itemLine = itemParts[1]

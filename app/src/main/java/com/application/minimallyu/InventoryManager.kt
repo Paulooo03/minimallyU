@@ -389,4 +389,52 @@ class InventoryManager(private val context: Context) {
         }
     }
 
+    fun getItemsByCategory(categoryQuery: String): List<String> {
+        val results = mutableListOf<String>()
+        try {
+            val file = inventoryFile
+            if (!file.exists()) return results
+
+            val lines = file.readLines()
+            if (lines.size < 2) return results
+
+            // Extracting categories from the first row
+            val categories = lines[0].split(",")
+
+            // Find the starting index of the requested category
+            var categoryIndex = -1
+            for (i in categories.indices step 5) {
+                if (categories[i].trim().equals(categoryQuery, ignoreCase = true)) {
+                    categoryIndex = i
+                    break
+                }
+            }
+
+            // If category not found, return empty list
+            if (categoryIndex == -1) return results
+
+            results.add("Category: $categoryQuery")
+
+            // Iterate through the inventory rows
+            for (row in 1 until lines.size) {
+                val items = lines[row].split(",")
+
+                // Ensure we have enough columns for processing
+                if (categoryIndex + 4 >= items.size) continue
+
+                val itemName = items[categoryIndex].trim()
+                val qty = items[categoryIndex + 1].trim()
+                val srp = items[categoryIndex + 2].trim()
+                val sold = items[categoryIndex + 3].trim()
+
+                // Only add items that have a name
+                if (itemName.isNotEmpty()) {
+                    results.add("Item: $itemName\nQty: $qty\nSRP: $srp\nSold: $sold")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("InventoryManager", "Error fetching category items: ${e.message}")
+        }
+        return results
+    }
 }

@@ -33,8 +33,8 @@
         app:layout_constraintTop_toBottomOf="@id/ItemList" />
 
     <!-- AutoComplete below itemsList -->
-    <AutoCompleteTextView
-        android:id="@+id/autoCompleteTextView"
+    <Spinner
+        android:id="@+id/itemsCategory"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="Select an option"
@@ -58,7 +58,7 @@
         android:inputType="text"
         android:padding="12dp"
         android:background="@android:drawable/editbox_background"
-        app:layout_constraintTop_toBottomOf="@id/autoCompleteTextView"
+        app:layout_constraintTop_toBottomOf="@id/itemsCategory"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@id/searchItemButton"
         app:layout_constraintBottom_toTopOf="@id/itemsCart" />

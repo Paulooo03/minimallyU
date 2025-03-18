@@ -6,8 +6,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import java.io.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -18,6 +17,9 @@ class MainActivity : AppCompatActivity() {
         val usernameEditText = findViewById<EditText>(R.id.userName)
         val passwordEditText = findViewById<EditText>(R.id.passWord)
         val loginButton = findViewById<Button>(R.id.loginButton)
+
+        // Ensure users.csv is available in internal storage
+        copyUsersFileIfNeeded()
 
         loginButton.setOnClickListener {
             val username = usernameEditText.text.toString().trim()
@@ -38,10 +40,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun validateLogin(username: String, password: String): String? {
-        try {
-            val inputStream = assets.open("users.csv")
-            val reader = BufferedReader(InputStreamReader(inputStream))
+        val usersFile = File(filesDir, "users.csv")
+        if (!usersFile.exists()) return null
 
+        try {
+            val reader = BufferedReader(FileReader(usersFile))
             reader.readLine() // Skip header
 
             reader.useLines { lines ->
@@ -62,5 +65,20 @@ class MainActivity : AppCompatActivity() {
             e.printStackTrace()
         }
         return null // Return null if login fails
+    }
+
+    private fun copyUsersFileIfNeeded() {
+        val usersFile = File(filesDir, "users.csv")
+        if (usersFile.exists()) return // File already exists, no need to copy
+
+        try {
+            val inputStream = assets.open("users.csv")
+            val outputStream = FileOutputStream(usersFile)
+            inputStream.copyTo(outputStream)
+            inputStream.close()
+            outputStream.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
