@@ -3,9 +3,7 @@ package com.application.minimallyu
 import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
-import java.io.BufferedReader
 import java.io.File
-import java.io.FileReader
 import java.io.IOException
 
 class Users(private val context: Context) {
@@ -113,6 +111,42 @@ class Users(private val context: Context) {
             Log.d("Users", "User removed successfully: $userName")
         } catch (e: IOException) {
             Log.e("Users", "Error removing user: ${e.message}")
+        }
+    }
+
+    fun changePassword(username: String, newPassword: String) {
+        try {
+            val lines = usersFile.readLines().toMutableList()
+            if (lines.isEmpty()) {
+                Log.e("Users", "Users file is empty or doesn't exist")
+                return
+            }
+
+            val header = lines.first() // Preserve header
+            val updatedLines = mutableListOf(header)
+            var userFound = false
+
+            for (line in lines.drop(1)) {
+                val values = line.split(",").map { it.trim() }
+                if (values.size == 3 && values[0].equals(username, ignoreCase = true)) {
+                    updatedLines.add("${values[0]},${values[1]},$newPassword") // Update only the password
+                    userFound = true
+                } else {
+                    updatedLines.add(line) // Keep other users unchanged
+                }
+            }
+
+            if (!userFound) {
+                Log.e("Users", "User not found: $username")
+                return
+            }
+
+            // Rewrite the file with the updated content
+            usersFile.writeText(updatedLines.joinToString("\n"))
+
+            Log.d("Users", "Password changed successfully for: $username")
+        } catch (e: IOException) {
+            Log.e("Users", "Error changing password: ${e.message}")
         }
     }
 }

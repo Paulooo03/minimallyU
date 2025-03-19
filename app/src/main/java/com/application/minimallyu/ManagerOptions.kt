@@ -132,6 +132,27 @@ class ManagerOptions : AppCompatActivity() {
             findViewById<Button>(R.id.newPasswordButton)?.visibility = View.GONE
         }
 
+        fun showChangePasswordDialog() {
+            val dialogView = layoutInflater.inflate(R.layout.changepassword, null)
+            val changePasswordInput = dialogView.findViewById<EditText>(R.id.newPasswordInput)
+
+            AlertDialog.Builder(this)
+                .setTitle("Change Password")
+                .setView(dialogView)
+                .setPositiveButton("Confirm") { _, _ ->
+                    val newPassword = changePasswordInput.text.toString()
+                    if (newPassword.isNotEmpty() && selectedUserName != null) {
+                        users.changePassword(selectedUserName!!, newPassword)
+                        Toast.makeText(this, "Password updated successfully.", Toast.LENGTH_SHORT).show()
+                        refreshUsersDisplay()
+                    } else {
+                        Toast.makeText(this, "Enter a valid password.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+
         removeUserButton.setOnClickListener{
             selectedUserName?.let {
                 users.removeUser(it)
@@ -156,6 +177,10 @@ class ManagerOptions : AppCompatActivity() {
                 Toast.makeText(this,"Successfully added:$userNameStr", Toast.LENGTH_SHORT).show()
                 refreshUsersDisplay()
             }
+        }
+
+        newPasswordButton.setOnClickListener{
+            showChangePasswordDialog()
         }
 
         //______________________________________________________________________________________________________________//
