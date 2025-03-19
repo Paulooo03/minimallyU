@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Environment
 import android.util.Log
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 
 class InventoryManager(private val context: Context) {
@@ -42,22 +43,29 @@ class InventoryManager(private val context: Context) {
         return csvBuilder.toString()
     }
 
-    fun exportInventoryReportToDownloads(): String {
-        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val outputFile = File(downloadsDir, fileName)
+    fun exportInventoryToDownloads(csvContent: String) {
+        try {
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val exportFile = File(downloadsDir, "inventory_export.csv")
 
-        return try {
             if (!inventoryFile.exists()) {
-                Log.e("InventoryManager", "Inventory file does not exist.")
-                return "Export failed: Inventory file not found."
+                Log.e("ManagerOptions", "Inventory file does not exist.")
+                return
             }
 
-            inventoryFile.copyTo(outputFile, overwrite = true)
-            Log.d("InventoryManager", "Inventory report exported to: ${outputFile.absolutePath}")
-            "Export successful: ${outputFile.absolutePath}"
+            val lines = inventoryFile.readLines()
+            if (lines.isEmpty()) {
+                Log.e("ManagerOptions", "Inventory file is empty.")
+                return
+            }
+
+            FileOutputStream(exportFile).use { outputStream ->
+                outputStream.write((lines.joinToString("\n") + "\n").toByteArray())
+            }
+
+            Log.d("ManagerOptions", "Inventory successfully exported to Downloads.")
         } catch (e: IOException) {
-            Log.e("InventoryManager", "Error exporting inventory report: ${e.message}")
-            "Export failed: ${e.message}"
+            Log.e("ManagerOptions", "Error exporting inventory: ${e.message}")
         }
     }
 
@@ -104,22 +112,25 @@ class InventoryManager(private val context: Context) {
                 return inventory
             }
 
-            val categories = lines[0].split(",")
+            val categories = lines[0].split(",").map { it.trim() }
 
             for (row in 1 until lines.size) {
-                val items = lines[row].split(",")
+                val items = lines[row].split(",").map { it.trim() }
 
-                if (items.size < categories.size) continue
-
+                // Ensure we iterate through all categories, even if some are empty
                 for (col in categories.indices step 5) {
-                    if (col + 4 >= items.size) break
+                    if (col + 4 >= categories.size) break  // Prevent index out-of-bounds
 
-                    val category = categories[col].trim()
-                    val itemName = items[col].trim()
-                    val qty = items[col + 1].trim()
-                    val srp = items[col + 2].trim()
-                    val sold = items[col + 3].trim()
+                    val category = categories[col]
+                    val itemName = items.getOrNull(col) ?: ""
+                    val qty = items.getOrNull(col + 1) ?: "0"
+                    val srp = items.getOrNull(col + 2) ?: "0"
+                    val sold = items.getOrNull(col + 3) ?: "0"
 
+                    // Debugging: Check if we're skipping important items
+                    Log.d("InventoryManager", "Row: $row, Col: $col -> Category: $category, Item: $itemName, Qty: $qty, SRP: $srp, Sold: $sold")
+
+                    // Don't skip the loop if some categories are empty—just ignore empty items
                     if (itemName.isNotEmpty()) {
                         inventory.add("Category: $category\nItem: $itemName\nQty: $qty\nSRP: $srp\nSold: $sold")
                     }

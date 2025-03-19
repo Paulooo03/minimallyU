@@ -1,22 +1,14 @@
 package com.application.minimallyu
 
 import android.annotation.SuppressLint
-import android.content.ContentValues
-import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
-import android.os.Environment
-import android.provider.MediaStore
 import android.view.View
 import android.widget.*
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.Group
-import java.io.File
-import java.io.FileOutputStream
-import java.io.OutputStream
 
 class ManagerOptions : AppCompatActivity() {
 
@@ -221,42 +213,10 @@ class ManagerOptions : AppCompatActivity() {
             searchResultsListView.adapter = adapter
         }
 
-        fun Context.exportInventoryToDownloads(csvContent: String): String {
-            val fileName = "inventory_export.csv"
-            var outputStream: OutputStream? = null
-
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    // For Android 10+ (Scoped Storage)
-                    val contentValues = ContentValues().apply {
-                        put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-                        put(MediaStore.Downloads.MIME_TYPE, "text/csv")
-                        put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-                    }
-
-                    val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
-                    uri?.let { outputStream = contentResolver.openOutputStream(it) }
-                } else {
-                    // For Android 9 and below
-                    val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                    val file = File(downloadsDir, fileName)
-                    outputStream = FileOutputStream(file)
-                }
-
-                outputStream?.use {
-                    it.write(csvContent.toByteArray())
-                }
-
-                return "Inventory exported to Downloads as $fileName"
-            } catch (e: Exception) {
-                return "Error exporting file: ${e.message}"
-            }
-        }
 
         exportInventoryReport.setOnClickListener {
             val csvContent = inventoryManager.getInventoryAsCSV() // Ensure this function returns CSV data
-            val resultMessage = exportInventoryToDownloads(csvContent)
-            Toast.makeText(this, resultMessage, Toast.LENGTH_LONG).show()
+            inventoryManager.exportInventoryToDownloads(csvContent)
         }
 
         fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
