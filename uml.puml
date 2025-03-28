@@ -1,0 +1,85 @@
+@startuml
+class com.application.minimallyu.InventoryManager {
+-  fileName
+-  inventoryFile
++ void initializeInventory(Context)
++ String getInventoryAsCSV()
++ String exportInventoryReportToDownloads()
+- void copyInventoryIfNeeded()
++ void resetInventory()
++ List<String> loadInventory()
++ List<String> searchItem(String)
++ List<String> getCategories()
++ void addItem(String,String,String,String)
++ void removeItem(String)
++ void editItem(void,String,void,String,void,String?,void,String?,void,String?)
++ void null()
++ Double? getItemPrice(String)
++ Int? getItemQuantity(String)
++ Int? getItemSold(String)
++ void copyInventoryAlways()
+}
+
+
+class com.application.minimallyu.CashierActivity {
+- InventoryManager inventoryManager
+- ListView items
++ void onCreate(Bundle?)
+- void loadInventoryList()
++ void onResume()
+}
+
+
+class com.application.minimallyu.MainActivity {
++ void onCreate(Bundle?)
+- String? validateLogin(String,String)
+}
+
+class com.application.minimallyu.ManagerOptions {
+- InventoryManager inventoryManager
+- ListView searchResultsListView
+- Button addItemsButton
+- Button removeItemButton
+- Group selectedItemDetailsGroup
++ void onCreate(Bundle?)
+- void refreshInventoryDisplay()
+- void showAddItemDialog()
+- void showRemoveItemDialog()
+}
+
+
+class com.application.minimallyu.ExampleUnitTest {
++ void addition_isCorrect()
+}
+
+class com.application.minimallyu.databinding.DialogRemoveItemBinding {
+- LinearLayout rootView
++ Spinner itemSpinner
++ LinearLayout getRoot()
++ {static} DialogRemoveItemBinding inflate(LayoutInflater)
++ {static} DialogRemoveItemBinding inflate(LayoutInflater,ViewGroup,boolean)
++ {static} DialogRemoveItemBinding bind(View)
+}
+
+
+class com.application.minimallyu.ManagerActivity {
+- InventoryManager inventoryManager
+- ListView items
++ void onCreate(Bundle?)
+- void loadInventoryList()
++ void onResume()
+}
+
+
+
+androidx.appcompat.app.AppCompatActivity <|-- com.application.minimallyu.CashierActivity
+androidx.appcompat.app.AppCompatActivity <|-- com.application.minimallyu.MainActivity
+androidx.appcompat.app.AppCompatActivity <|-- com.application.minimallyu.ManagerOptions
+androidx.viewbinding.ViewBinding <|.. com.application.minimallyu.databinding.DialogRemoveItemBinding
+androidx.appcompat.app.AppCompatActivity <|-- com.application.minimallyu.ManagerActivity
+androidx.viewbinding.ViewBinding <|.. com.application.minimallyu.databinding.ActivityManagerOptionsBinding
+androidx.viewbinding.ViewBinding <|.. com.application.minimallyu.databinding.ActivityMainBinding
+androidx.viewbinding.ViewBinding <|.. com.application.minimallyu.databinding.CashierBinding
+androidx.viewbinding.ViewBinding <|.. com.application.minimallyu.databinding.ManagerBinding
+androidx.viewbinding.ViewBinding <|.. com.application.minimallyu.databinding.DialogAddItemBinding
+@enduml

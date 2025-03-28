@@ -16,61 +16,66 @@
         app:constraint_referenced_ids="changePriceButton,changeQuantityButton,newPrice,newQuantity" />
 
     <!-- Navigation Buttons - Always visible -->
-    <Button
-        android:id="@+id/inventoryButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:backgroundTint="#000000"
-        android:text="Inventory"
-        android:textColor="#FFFFFF"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/usersButton"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintHorizontal_chainStyle="spread"
-        android:layout_marginTop="16dp" />
 
-    <Button
-        android:id="@+id/usersButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:backgroundTint="#000000"
-        android:text="Users"
-        android:textColor="#FFFFFF"
-        app:layout_constraintStart_toEndOf="@+id/inventoryButton"
-        app:layout_constraintEnd_toStartOf="@+id/salesButton"
-        app:layout_constraintTop_toTopOf="@+id/inventoryButton" />
+    <!-- Back Button - Always visible -->
+
+    <!-- Inventory Section - Initially hidden -->
 
     <Button
         android:id="@+id/salesButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="44dp"
         android:backgroundTint="#000000"
         android:text="Sales"
         android:textColor="#FFFFFF"
-        app:layout_constraintStart_toEndOf="@+id/usersButton"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/inventoryButton" />
+        app:layout_constraintStart_toEndOf="@+id/usersButton"
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Back Button - Always visible -->
+    <Button
+        android:id="@+id/inventoryButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="44dp"
+        android:backgroundTint="#000000"
+        android:text="Inventory"
+        android:textColor="#FFFFFF"
+        app:layout_constraintEnd_toStartOf="@+id/usersButton"
+        app:layout_constraintHorizontal_chainStyle="spread"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/usersButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="44dp"
+        android:backgroundTint="#000000"
+        android:text="Users"
+        android:textColor="#FFFFFF"
+        app:layout_constraintEnd_toStartOf="@+id/salesButton"
+        app:layout_constraintStart_toEndOf="@+id/inventoryButton"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <Button
         android:id="@+id/backButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginBottom="64dp"
         android:backgroundTint="#000000"
         android:text="Back"
         android:textColor="#FFFFFF"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- Inventory Section - Initially hidden -->
     <androidx.constraintlayout.widget.Group
         android:id="@+id/inventoryGroup"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        app:constraint_referenced_ids="exportInventoryButton,List,searchItem,searchItemButton,addItemsButton,removeItemButton,resetInventoryButton" />
+        app:constraint_referenced_ids="exportInventoryButton,List,searchItem,searchItemButton, addItemsButton, removeItemButton, resetInventoryButton" />
 
     <!-- List view for items -->
     <Button
@@ -123,20 +128,20 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="@+id/searchItem" />
 
+    <!-- Price and Quantity change section -->
+
     <Button
         android:id="@+id/resetInventoryButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
+        android:layout_marginBottom="24dp"
         android:backgroundTint="#000000"
         android:text="Refresh"
         android:textColor="#FFFFFF"
-        app:layout_constraintStart_toEndOf="@id/addItemsButton"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/backButton"
-        android:layout_marginBottom="24dp"/>
+        app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Price and Quantity change section -->
     <Button
         android:id="@+id/changePriceButton"
         android:layout_width="wrap_content"
@@ -190,33 +195,33 @@
         app:layout_constraintBottom_toBottomOf="@+id/newPrice"
         android:layout_marginEnd="16dp" />
 
+    <!-- Add Item button - Moved below newQuantity -->
+
+    <!-- Users Section Group - Initially hidden -->
+
     <Button
         android:id="@+id/removeItemButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Remove Item"
-        android:backgroundTint="#000000"
-        android:textColor="#FFFFFF"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/addItemsButton"
-        app:layout_constraintBottom_toTopOf="@+id/backButton"
         android:layout_marginBottom="24dp"
-        android:layout_marginEnd="16dp"/>
+        android:backgroundTint="#000000"
+        android:text="Remove Item"
+        android:textColor="#FFFFFF"
+        app:layout_constraintBottom_toTopOf="@+id/backButton"
+        tools:layout_editor_absoluteX="7dp" />
 
-    <!-- Add Item button - Moved below newQuantity -->
     <Button
         android:id="@+id/addItemsButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:layout_marginBottom="24dp"
         android:backgroundTint="#000000"
         android:text="Add Item"
         android:textColor="#FFFFFF"
-        app:layout_constraintStart_toEndOf="@+id/removeItemButton"
-        app:layout_constraintEnd_toStartOf="@+id/resetInventoryButton"
         app:layout_constraintBottom_toTopOf="@+id/backButton"
-        android:layout_marginBottom="24dp"/>
+        app:layout_constraintStart_toEndOf="@+id/removeItemButton" />
 
-    <!-- Users Section Group - Initially hidden -->
     <androidx.constraintlayout.widget.Group
         android:id="@+id/usersGroup"
         android:layout_width="wrap_content"
