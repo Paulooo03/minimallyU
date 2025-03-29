@@ -14,8 +14,10 @@ import androidx.core.view.WindowInsetsCompat
 class ManagerActivity : AppCompatActivity() {
 
     private lateinit var inventoryManager: InventoryManager
+    private lateinit var sales: sales
     private lateinit var items: ListView
     private lateinit var categorySearch: Spinner
+    private lateinit var cartedItems: ListView
     private var selectedCategory: String? = null
 
     @SuppressLint("MissingInflatedId")
@@ -24,11 +26,14 @@ class ManagerActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.manager)
 
+        //Section to store UI elements as variables
         val logoutButton = findViewById<Button>(R.id.logoutButton)
         val managerOptionsButton = findViewById<Button>(R.id.options)
         val searchItemInput = findViewById<EditText>(R.id.searchItem)
+        val orderButton = findViewById<Button>(R.id.orderButton)
         val searchItemButton = findViewById<Button>(R.id.searchItemButton)
         categorySearch = findViewById(R.id.itemsCategory)
+        cartedItems = findViewById(R.id.cartItems)
         items = findViewById(R.id.itemsList)
 
         inventoryManager = InventoryManager(this)
@@ -37,6 +42,43 @@ class ManagerActivity : AppCompatActivity() {
         loadInventoryList() // Load full inventory on startup
 
         setupCategoryDropdown()
+
+        //Section to store adapter to put items from itemsList to cartedItems
+        val cartList = mutableListOf<String>()
+        val cartAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, cartList)
+        cartedItems.adapter = cartAdapter
+
+        //Adds item to the cart
+        items.setOnItemClickListener { _, _, position, _ ->
+            val selectedItem = items.adapter.getItem(position) as String
+            cartList.add(selectedItem)
+            cartAdapter.notifyDataSetChanged()
+            Toast.makeText(this, "Added $selectedItem to cart", Toast.LENGTH_SHORT).show()
+        }
+
+        //Removes item from the cart
+        cartedItems.setOnItemClickListener { _, _, position, _ ->
+            val removedItem = cartList[position]
+            cartList.removeAt(position)
+            cartAdapter.notifyDataSetChanged()
+            Toast.makeText(this, "$removedItem removed from cart", Toast.LENGTH_SHORT).show()
+        }
+
+        orderButton.setOnClickListener {
+            if (cartList.isEmpty()) {
+                Toast.makeText(this, "Cart is empty!", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // Inflate order_dialog.xml
+            val dialogView = layoutInflater.inflate(R.layout.order_dialog, null)
+
+            AlertDialog.Builder(this)
+                .setTitle("Order Summary")
+                .setView(dialogView)
+                .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+                .show()
+        }
 
         searchItemButton.setOnClickListener {
             val searchQuery = searchItemInput.text.toString()
