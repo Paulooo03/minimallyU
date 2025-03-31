@@ -109,6 +109,7 @@ class ManagerActivity : AppCompatActivity() {
                     if (selectedPayment == "Gcash" && gcashInput.isEmpty()) {
                         Toast.makeText(this, "Please enter a Gcash number.", Toast.LENGTH_SHORT).show()
                     } else {
+                        sales.updateSalesReport(orderListView, selectedPayment, gcashInput)
                         Toast.makeText(this, "Payment mode: $selectedPayment", Toast.LENGTH_SHORT).show()
                         dialog.dismiss()
                     }

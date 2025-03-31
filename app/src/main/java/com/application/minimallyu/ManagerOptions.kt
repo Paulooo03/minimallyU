@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.Group
+import java.io.File
 
 class ManagerOptions : AppCompatActivity() {
 
@@ -20,6 +21,7 @@ class ManagerOptions : AppCompatActivity() {
     private lateinit var selectedItemDetailsGroup: Group
     private lateinit var selectedUserDetailsGroup: Group
     private lateinit var userPosition: Spinner
+    private lateinit var sales: sales
 
     @SuppressLint("MissingInflatedId", "CutPasteId", "WrongViewCast")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,6 +68,10 @@ class ManagerOptions : AppCompatActivity() {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         userPosition.adapter = adapter
 
+        //sales variables section
+        val salesList = findViewById<ListView>(R.id.salesList)
+        val exportSales = findViewById<Button>(R.id.exportSalesButton)
+
         // Make sure the selected item details are hidden initially
         selectedItemDetailsGroup.visibility = View.GONE
 
@@ -73,6 +79,7 @@ class ManagerOptions : AppCompatActivity() {
         inventoryManager.initializeInventory(this) // Ensure inventory_export.csv exists
         inventoryManager.loadInventory() // Now loads from inventory_export.csv
         users = Users(this)
+        sales = sales(this)
 
         // Initialize the ListView
         searchResultsListView = findViewById(R.id.List)
@@ -278,6 +285,30 @@ class ManagerOptions : AppCompatActivity() {
             showRemoveItemDialog()
         }
 
+        //------------------------------------------------------------------------//
+        //sales section//
+
+        fun refreshSalesDisplay() {
+            try {
+                // Debug: Check if sales file exists
+                val salesFileExists = File(filesDir, "sales.csv").exists()
+                Toast.makeText(this, "Sales file exists: $salesFileExists", Toast.LENGTH_SHORT).show()
+
+                val salesData = sales.loadSales()
+                if (salesData.isNotEmpty()) {
+                    val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, salesData)
+                    salesList.adapter = adapter
+                    salesList.visibility = View.VISIBLE
+                } else {
+                    salesList.visibility = View.GONE
+                    Toast.makeText(this, "No sales data available.", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace() // Log the full stack trace
+                Toast.makeText(this, "Error loading sales data: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+
         inventoryButton.setOnClickListener {
             inventoryGroup.visibility = View.VISIBLE
             usersGroup.visibility = View.GONE
@@ -309,6 +340,7 @@ class ManagerOptions : AppCompatActivity() {
             exportSalesButton.visibility = View.VISIBLE
             searchResultsListView.visibility = View.GONE
             selectedItemDetailsGroup.visibility = View.GONE
+            refreshSalesDisplay()
         }
 
         backButton.setOnClickListener {
