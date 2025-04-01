@@ -11,8 +11,8 @@ class InventoryManager(private val context: Context) {
 
     private val fileName = "inventory_export.csv"
     private val inventoryFile = File(context.filesDir, fileName)
-    private val salesFile = File(context.filesDir, fileName)
     private val exFileName = "sales_export.csv"
+    private val salesFile = File(context.filesDir, exFileName)
     init {
         copyInventoryIfNeeded()
     }
@@ -23,6 +23,22 @@ class InventoryManager(private val context: Context) {
         if (!file.exists()) {
             try {
                 context.assets.open("inventory.csv").use { inputStream ->
+                    file.outputStream().use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun initializeSales(context: Context) {
+        val file = File(context.filesDir, "inventory_export.csv")
+
+        if (!file.exists()) {
+            try {
+                context.assets.open("sales.csv").use { inputStream ->
                     file.outputStream().use { outputStream ->
                         inputStream.copyTo(outputStream)
                     }
