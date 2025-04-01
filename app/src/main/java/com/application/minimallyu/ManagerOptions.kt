@@ -47,7 +47,6 @@ class ManagerOptions : AppCompatActivity() {
         val newPrice = findViewById<EditText>(R.id.newPrice)
         val newQuantityInput = findViewById<EditText>(R.id.newQuantity)
         val exportInventoryReport = findViewById<Button>(R.id.exportInventoryButton)
-        val exportSalesButton = findViewById<Button>(R.id.exportSalesButton)
         addItemsButton = findViewById<Button>(R.id.addItemsButton)
         removeItemButton = findViewById<Button>(R.id.removeItemButton)
         val searchItemButton = findViewById<Button>(R.id.searchItemButton)
@@ -70,7 +69,7 @@ class ManagerOptions : AppCompatActivity() {
 
         //sales variables section
         val salesList = findViewById<ListView>(R.id.salesList)
-        val exportSales = findViewById<Button>(R.id.exportSalesButton)
+        val exportSalesButton = findViewById<Button>(R.id.exportSalesButton)
 
         // Make sure the selected item details are hidden initially
         selectedItemDetailsGroup.visibility = View.GONE
@@ -227,8 +226,8 @@ class ManagerOptions : AppCompatActivity() {
         }
 
         exportSalesButton.setOnClickListener {
-            val exportCSVContent = inventoryManager.getSalesAsCSV()
-            inventoryManager.exportSalesToDownloads(exportCSVContent)
+            sales.exportSalesToDownloads()
+            Toast.makeText(this, "Sales data export initiated", Toast.LENGTH_SHORT).show()
         }
 
         fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {

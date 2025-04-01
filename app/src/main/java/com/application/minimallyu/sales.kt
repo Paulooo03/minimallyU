@@ -1,8 +1,11 @@
 package com.application.minimallyu
 
 import android.content.Context
+import android.os.Environment
+import android.util.Log
 import android.widget.ListView
 import java.io.File
+import java.io.FileOutputStream
 import java.io.FileWriter
 import java.io.IOException
 import java.time.LocalDate
@@ -122,5 +125,74 @@ class sales(private val context: Context) {
 
         println("Returning ${salesList.size} sales records")
         return salesList
+    }
+
+    fun getSalesAsCSV(): String {
+        val salesData = loadSales()
+        val csvBuilder = StringBuilder()
+
+        csvBuilder.append("Sold Items,Cash,Gcash,GcashNum,Date\n") //
+        for (sale in salesData) {
+            csvBuilder.append(sale.replace("\n", ",")).append("\n")
+        }
+
+        return csvBuilder.toString()
+    }
+
+    // 1. First, modify the exportSalesToDownloads function in the sales class:
+    fun exportSalesToDownloads() {
+        try {
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val exportFile = File(downloadsDir, "sales_export.csv")
+
+            if (!salesFile.exists()) {
+                Log.e("SalesManager", "Sales file does not exist.")
+                return
+            }
+
+            // Create the export file with header row
+            FileOutputStream(exportFile).use { outputStream ->
+                // First write the header
+                outputStream.write("Sold Items,Cash,Gcash,GcashNum,Date\n".toByteArray())
+
+                // Then write all the data rows from the sales file
+                salesFile.readLines().forEach { line ->
+                    outputStream.write("$line\n".toByteArray())
+                }
+            }
+
+            Log.d("SalesManager", "Sales successfully exported to Downloads at ${exportFile.absolutePath}")
+        } catch (e: IOException) {
+            Log.e("SalesManager", "Error exporting sales: ${e.message}")
+            e.printStackTrace()
+        }
+    }
+
+    private fun copySalesIfNeeded() {
+        if (!salesFile.exists()) {
+            try {
+                context.assets.open(fileName).use { inputStream ->
+                    salesFile.outputStream().use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+                Log.d("SalesManager", "Sales data copied from assets.")
+            } catch (e: IOException) {
+                Log.e("SalesManager", "Error copying sales data: ${e.message}")
+            }
+        }
+    }
+
+    fun resetSales() {
+        try {
+            context.assets.open(fileName).use { inputStream ->
+                salesFile.outputStream().use { outputStream ->
+                    inputStream.copyTo(outputStream)
+                }
+            }
+            Log.d("SalesManager", "Sales data reset from assets.")
+        } catch (e: IOException) {
+            Log.e("SalesManager", "Error resetting sales data: ${e.message}")
+        }
     }
 }
