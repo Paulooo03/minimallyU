@@ -11,6 +11,8 @@ class InventoryManager(private val context: Context) {
 
     private val fileName = "inventory_export.csv"
     private val inventoryFile = File(context.filesDir, fileName)
+    private val salesFile = File(context.filesDir, fileName)
+    private val exFileName = "sales_export.csv"
     init {
         copyInventoryIfNeeded()
     }
@@ -140,6 +142,116 @@ class InventoryManager(private val context: Context) {
             Log.e("InventoryManager", "Error loading inventory: ${e.message}")
         }
         return inventory
+    }
+
+    fun getSalesAsCSV(): String {
+        val salesData = loadSales()
+        val csvBuilder = StringBuilder()
+
+        csvBuilder.append("Sold Items,Cash,Gcash,GcashNum,Date\n") //
+        for (sale in salesData) {
+            csvBuilder.append(sale.replace("\n", ",")).append("\n")
+        }
+
+        return csvBuilder.toString()
+    }
+
+    fun exportSalesToDownloads(csvContent: String) {
+        try {
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val exportFile = File(downloadsDir, "sales_export.csv")
+
+            if (!salesFile.exists()) {
+                Log.e("SalesManager", "Sales file does not exist.")
+                return
+            }
+
+            val lines = salesFile.readLines()
+            if (lines.isEmpty()) {
+                Log.e("SalesManager", "Sales file is empty.")
+                return
+            }
+
+            FileOutputStream(exportFile).use { outputStream ->
+                outputStream.write((lines.joinToString("\n") + "\n").toByteArray())
+            }
+
+            Log.d("SalesManager", "Sales successfully exported to Downloads.")
+        } catch (e: IOException) {
+            Log.e("SalesManager", "Error exporting sales: ${e.message}")
+        }
+    }
+
+    private fun copySalesIfNeeded() {
+        if (!salesFile.exists()) {
+            try {
+                context.assets.open(exFileName).use { inputStream ->
+                    salesFile.outputStream().use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+                Log.d("SalesManager", "Sales data copied from assets.")
+            } catch (e: IOException) {
+                Log.e("SalesManager", "Error copying sales data: ${e.message}")
+            }
+        }
+    }
+
+    fun resetSales() {
+        try {
+            context.assets.open(exFileName).use { inputStream ->
+                salesFile.outputStream().use { outputStream ->
+                    inputStream.copyTo(outputStream)
+                }
+            }
+            Log.d("SalesManager", "Sales data reset from assets.")
+        } catch (e: IOException) {
+            Log.e("SalesManager", "Error resetting sales data: ${e.message}")
+        }
+    }
+
+    fun loadSales(): List<String> {
+        copySalesIfNeeded()
+        val sales = mutableListOf<String>()
+        try {
+            if (!salesFile.exists()) {
+                Log.e("SalesManager", "Sales file does NOT exist!")
+                return sales
+            }
+
+            val lines = salesFile.readLines()
+            if (lines.size < 2) {
+                Log.e("SalesManager", "Sales file does not have enough rows.")
+                return sales
+            }
+
+            val categories = lines[0].split(",").map { it.trim() }
+
+            for (row in 1 until lines.size) {
+                val items = lines[row].split(",").map { it.trim() }
+
+                // Ensure we iterate through all categories, even if some are empty
+                for (col in categories.indices step 6) {
+                    if (col + 5 >= categories.size) break  // Prevent index out-of-bounds
+
+                    val category = categories[col]
+                    val itemName = items.getOrNull(col) ?: ""
+                    val qty = items.getOrNull(col + 1) ?: "0"
+                    val srp = items.getOrNull(col + 2) ?: "0"
+                    val sold = items.getOrNull(col + 3) ?: "0"
+                    val date = items.getOrNull(col + 4) ?: "Unknown"
+
+                    Log.d("SalesManager", "Row: $row, Col: $col -> Category: $category, Item: $itemName, Qty: $qty, SRP: $srp, Sold: $sold, Date: $date")
+
+                    if (itemName.isNotEmpty()) {
+                        sales.add("Category: $category\nItem: $itemName\nQty: $qty\nSRP: $srp\nSold: $sold\nDate: $date")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("SalesManager", "Error loading sales: ${e.message}")
+        }
+        return sales
     }
 
     fun searchItem(query: String): List<String> {

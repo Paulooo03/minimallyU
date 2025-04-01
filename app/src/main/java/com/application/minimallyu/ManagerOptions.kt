@@ -226,6 +226,11 @@ class ManagerOptions : AppCompatActivity() {
             inventoryManager.exportInventoryToDownloads(csvContent)
         }
 
+        exportSalesButton.setOnClickListener {
+            val exportCSVContent = inventoryManager.getSalesAsCSV()
+            inventoryManager.exportSalesToDownloads(exportCSVContent)
+        }
+
         fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults)
             if (requestCode == 1) {
