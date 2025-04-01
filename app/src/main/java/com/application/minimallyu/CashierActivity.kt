@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
@@ -26,6 +27,10 @@ class CashierActivity : AppCompatActivity() {
     private lateinit var categorySearch: Spinner
     private lateinit var cartedItems: ListView
     private var selectedCategory: String? = null
+    // Map to track item quantities
+    private val cartMap = mutableMapOf<String, Int>()
+    // Map to store the full item details for easy access
+    private val itemDetailsMap = mutableMapOf<String, String>()
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,28 +55,81 @@ class CashierActivity : AppCompatActivity() {
         setupCategoryDropdown()
 
         //Section to store adapter to put items from itemsList to cartedItems
-        val cartList = mutableListOf<String>()
-        val cartAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, cartList)
+        val cartAdapter = object : ArrayAdapter<String>(
+            this,
+            android.R.layout.simple_list_item_1,
+            mutableListOf<String>()
+        ) {
+            override fun getCount(): Int = cartMap.size
+
+            override fun getItem(position: Int): String? {
+                val keys = cartMap.keys.toList()
+                return if (position < keys.size) {
+                    val itemId = keys[position]
+                    val quantity = cartMap[itemId] ?: 0
+                    // Return the item details with quantity
+                    val fullItem = itemDetailsMap[itemId] ?: ""
+                    // Replace the original Qty with our cart quantity
+                    fullItem.replace(Regex("Qty: \\d+"), "Qty: $quantity")
+                }
+                else null
+            }
+
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getView(position, convertView, parent)
+                val textView = view.findViewById<TextView>(android.R.id.text1)
+                val item = getItem(position)
+                textView.text = item
+                return view
+            }
+        }
         cartedItems.adapter = cartAdapter
 
-        //Adds item to the cart
+        //Adds item to the cart or increments quantity
         items.setOnItemClickListener { _, _, position, _ ->
-            val selectedItem = items.adapter.getItem(position) as String
-            cartList.add(selectedItem)
+            val selectedItemFull = items.adapter.getItem(position) as String
+
+            // Extract the item name for use as the unique identifier
+            val itemNameMatch = Regex("Item: ([^\n]+)").find(selectedItemFull)
+            val itemName = itemNameMatch?.groupValues?.get(1) ?: return@setOnItemClickListener
+
+            // Remove "Sold: X" from the item details before storing
+            val modifiedItemDetails = selectedItemFull.replace(Regex("Sold: \\d+"), "")
+            itemDetailsMap[itemName] = modifiedItemDetails
+
+            // Update the cart map with the new quantity
+            val currentQty = cartMap[itemName] ?: 0
+            cartMap[itemName] = currentQty + 1
+
+            // Notify the adapter to refresh the view
             cartAdapter.notifyDataSetChanged()
-            Toast.makeText(this, "Added $selectedItem to cart", Toast.LENGTH_SHORT).show()
+
+            Toast.makeText(this, "Added $itemName to cart", Toast.LENGTH_SHORT).show()
         }
 
-        //Removes item from the cart
+        //Decrements quantity or removes item from cart
         cartedItems.setOnItemClickListener { _, _, position, _ ->
-            val removedItem = cartList[position]
-            cartList.removeAt(position)
+            val itemKeys = cartMap.keys.toList()
+            if (position >= itemKeys.size) return@setOnItemClickListener
+
+            val itemName = itemKeys[position]
+            val currentQty = cartMap[itemName] ?: 0
+
+            if (currentQty > 1) {
+                // Decrement quantity
+                cartMap[itemName] = currentQty - 1
+                Toast.makeText(this, "Reduced quantity of $itemName", Toast.LENGTH_SHORT).show()
+            } else {
+                // Remove item completely
+                cartMap.remove(itemName)
+                itemDetailsMap.remove(itemName)
+                Toast.makeText(this, "$itemName removed from cart", Toast.LENGTH_SHORT).show()
+            }
             cartAdapter.notifyDataSetChanged()
-            Toast.makeText(this, "$removedItem removed from cart", Toast.LENGTH_SHORT).show()
         }
 
         orderButton.setOnClickListener {
-            if (cartList.isEmpty()) {
+            if (cartMap.isEmpty()) {
                 Toast.makeText(this, "Cart is empty!", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
@@ -80,15 +138,27 @@ class CashierActivity : AppCompatActivity() {
             val orderListView = dialogView.findViewById<ListView>(R.id.orderListView)
             val paymentModeSpinner = dialogView.findViewById<Spinner>(R.id.paymentMode)
             val gcashNumber = dialogView.findViewById<EditText>(R.id.gcashNumber)
-            val totalPriceTextView = dialogView.findViewById<TextView>(R.id.totalPrice) // Ensure this exists in order_dialog.xml
+            val totalPriceTextView = dialogView.findViewById<TextView>(R.id.totalPrice)
 
-            // Populate ListView with carted items
-            val orderAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, cartList)
+            // Create order items with quantities for display
+            val orderItems = cartMap.map { (itemName, qty) ->
+                val itemDetails = itemDetailsMap[itemName] ?: ""
+                // Replace the original quantity with our cart quantity
+                itemDetails.replace(Regex("Qty: \\d+"), "Qty: $qty")
+            }
+
+            val orderAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, orderItems)
             orderListView.adapter = orderAdapter
 
-            // Calculate total price based on items in orderListView
-            val totalPrice = sales.calculateTotalPriceFromOrder(orderListView)
-            totalPriceTextView.text = "Total: ₱$totalPrice"
+            // Calculate total price based on items in the cart
+            var totalPrice = 0.0
+            cartMap.forEach { (itemName, qty) ->
+                val priceMatch = Regex("SRP: ([^\n]+)").find(itemDetailsMap[itemName] ?: "")
+                val price = priceMatch?.groupValues?.get(1)?.toDoubleOrNull() ?: 0.0
+                totalPrice += price * qty
+            }
+
+            totalPriceTextView.text = "Total: ₱${"%.2f".format(totalPrice)}"
 
             // Populate payment Spinner
             val paymentOptions = listOf("Cash", "Gcash")
@@ -114,7 +184,18 @@ class CashierActivity : AppCompatActivity() {
                     if (selectedPayment == "Gcash" && gcashInput.isEmpty()) {
                         Toast.makeText(this, "Please enter a Gcash number.", Toast.LENGTH_SHORT).show()
                     } else {
-                        Toast.makeText(this, "Payment mode: $selectedPayment", Toast.LENGTH_SHORT).show()
+                        // Update sales report with the order items
+                        sales.updateSalesReport(orderListView, selectedPayment, gcashInput)
+
+                        // Update inventory quantities (deduct sold items)
+                        updateInventoryAfterSale()
+
+                        Toast.makeText(this, "Order completed! Payment mode: $selectedPayment", Toast.LENGTH_SHORT).show()
+
+                        // Clear cart after successful order
+                        cartMap.clear()
+                        itemDetailsMap.clear()
+                        cartAdapter.notifyDataSetChanged()
                         dialog.dismiss()
                     }
                 }
@@ -171,6 +252,28 @@ class CashierActivity : AppCompatActivity() {
             builder.show()
         }
     }
+    
+    // Helper method to update inventory after a sale
+    private fun updateInventoryAfterSale() {
+        cartMap.forEach { (itemName, soldQty) ->
+            // Get current inventory quantity
+            val currentQty = inventoryManager.getItemQuantity(itemName) ?: 0
+            // Get current sold count
+            val currentSold = inventoryManager.getItemSold(itemName) ?: 0
+
+            // Calculate new values
+            val newQty = (currentQty - soldQty).coerceAtLeast(0)
+            val newSold = currentSold + soldQty
+
+            // Update the inventory
+            inventoryManager.editItem(
+                itemName = itemName,
+                newQuantity = newQty.toString(),
+                newSold = newSold.toString()
+            )
+        }
+    }
+
     private fun loadInventoryList() {
         try {
             val inventory = inventoryManager.loadInventory()
