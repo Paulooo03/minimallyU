@@ -22,34 +22,48 @@ class sales(private val context: Context) {
         var totalPrice = 0.0
         for (i in 0 until orderListView.adapter.count) {
             val itemString = orderListView.adapter.getItem(i).toString()
-            // Extract just the item name from the multi-line string
+
+            // Extract the item name
             val itemNameLine = itemString.split("\n")
                 .firstOrNull { it.startsWith("Item:") } ?: continue
             val itemName = itemNameLine.removePrefix("Item:").trim()
 
+            // Extract the quantity
+            val qtyLine = itemString.split("\n")
+                .firstOrNull { it.contains("Qty:") } ?: continue
+            val qtyStr = qtyLine.substringAfter("Qty:").trim()
+            val qty = qtyStr.toIntOrNull() ?: 1 // Default to 1 if parsing fails
+
             // Now get the price using just the item name
             val itemPrice = inventoryManager.getItemPrice(itemName) ?: 0.0
-            totalPrice += itemPrice
+            totalPrice += (itemPrice * qty)
         }
         return totalPrice
     }
 
     fun updateSalesReport(orderListView: ListView, paymentMethod: String, gcashNumber: String?) {
-        val soldItems = mutableListOf<String>()
+        val soldItemsWithQty = mutableListOf<String>()
 
         for (i in 0 until orderListView.adapter.count) {
             val itemString = orderListView.adapter.getItem(i).toString()
 
-            // Extract just the item name from the formatted string
+            // Extract the item name from the formatted string
             val itemNameLine = itemString.split("\n")
                 .firstOrNull { it.contains("Item:") } ?: continue
-
             val itemName = itemNameLine.substringAfter("Item:").trim()
-            soldItems.add(itemName)  // Add just the item name
+
+            // Extract the quantity from the formatted string
+            val qtyLine = itemString.split("\n")
+                .firstOrNull { it.contains("Qty:") } ?: continue
+            val qty = qtyLine.substringAfter("Qty:").trim()
+
+            // Add item with its quantity
+            soldItemsWithQty.add("$itemName (Qty: $qty)")
         }
 
-        val itemsSold = soldItems.joinToString("; ") // Separate item names with "; "
+        val itemsSold = soldItemsWithQty.joinToString("; ")
 
+        // Rest of your code remains the same
         val totalCash = if (paymentMethod == "Cash") calculateTotalPriceFromOrder(orderListView) else 0.0
         val totalGcash = if (paymentMethod == "Gcash") calculateTotalPriceFromOrder(orderListView) else 0.0
         val formattedDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))

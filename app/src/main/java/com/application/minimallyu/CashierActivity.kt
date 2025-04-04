@@ -86,6 +86,7 @@ class CashierActivity : AppCompatActivity() {
         cartedItems.adapter = cartAdapter
 
         //Adds item to the cart or increments quantity
+        //Adds item to the cart or increments quantity
         items.setOnItemClickListener { _, _, position, _ ->
             val selectedItemFull = items.adapter.getItem(position) as String
 
@@ -93,16 +94,31 @@ class CashierActivity : AppCompatActivity() {
             val itemNameMatch = Regex("Item: ([^\n]+)").find(selectedItemFull)
             val itemName = itemNameMatch?.groupValues?.get(1) ?: return@setOnItemClickListener
 
+            // Check if quantity is 0 or blank
+            val qtyMatch = Regex("Qty: (\\d+)").find(selectedItemFull)
+            val availableQty = qtyMatch?.groupValues?.get(1)?.toIntOrNull() ?: 0
+
+            if (availableQty <= 0) {
+                Toast.makeText(this, "Item not available", Toast.LENGTH_SHORT).show()
+                return@setOnItemClickListener
+            }
+
+            // Check if adding another item would exceed available quantity
+            val currentCartQty = cartMap[itemName] ?: 0
+            if (currentCartQty >= availableQty) {
+                Toast.makeText(this, "Cannot add more. Maximum available: $availableQty", Toast.LENGTH_SHORT).show()
+                return@setOnItemClickListener
+            }
+
             // Remove "Sold: X" from the item details before storing
             val modifiedItemDetails = selectedItemFull.replace(Regex("Sold: \\d+"), "")
             itemDetailsMap[itemName] = modifiedItemDetails
 
             // Update the cart map with the new quantity
-            val currentQty = cartMap[itemName] ?: 0
-            cartMap[itemName] = currentQty + 1
+            cartMap[itemName] = currentCartQty + 1
 
             // Notify the adapter to refresh the view
-            cartAdapter.notifyDataSetChanged()
+            (cartedItems.adapter as ArrayAdapter<*>).notifyDataSetChanged()
 
             Toast.makeText(this, "Added $itemName to cart", Toast.LENGTH_SHORT).show()
         }
